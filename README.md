@@ -1,7 +1,7 @@
 # Client-side API orchestration
 
 
-
+```
 project-root/
 ├── src/
 │   ├── app/                          # Presentation Layer (Next.js App Router)
@@ -67,3 +67,4 @@ project-root/
 │
 ├── .env.local
 └── next.config.js
+```
