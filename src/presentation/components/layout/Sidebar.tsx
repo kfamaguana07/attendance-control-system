@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Home, LogOut, Clock } from 'lucide-react';
+import { Users, Home, LogOut, Clock, Coffee } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/src/infrastructure/utils/utils';
@@ -27,6 +27,11 @@ const menuItems = [
     title: 'Turnos',
     icon: Clock,
     href: '/dashboard/turnos',
+  },
+  {
+    title: 'Recesos',
+    icon: Coffee,
+    href: '/dashboard/recesos',
   },
 ];
 
