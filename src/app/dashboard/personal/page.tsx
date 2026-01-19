@@ -82,6 +82,17 @@ export default function PersonalPage() {
     setSelectedPersonal(null);
   };
 
+  const handleEdit = (p: Personal) => {
+    setSelectedPersonal(p);
+    setOpenModal(true);
+  };
+
+  const handleDelete = async (ci: string) => {
+    // Aquí implementarás la lógica de eliminación cuando tengas el use case
+    toast.success('Personal eliminado exitosamente');
+    loadPersonal();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -116,6 +127,8 @@ export default function PersonalPage() {
           personal={filteredPersonal} 
           isLoading={isLoading}
           onSelectPersonal={handleSelectPersonal}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       </div>
 
