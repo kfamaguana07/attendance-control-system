@@ -41,8 +41,26 @@ export function PausaTable({ pausas, onEdit, onDelete, onSearch }: PausaTablePro
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
-    onSearch(value);
+    // Filtrado por frontend: no llamamos a onSearch para evitar recargas de API
+    // onSearch(value); 
   };
+
+  const filteredPausas = pausas.filter((pausa) => {
+    if (!searchQuery) return true;
+    const lowerQuery = searchQuery.toLowerCase();
+
+    // Búsqueda en todos los campos visibles y relevantes
+    return (
+      pausa.id.toString().includes(lowerQuery) ||
+      pausa.estado.toLowerCase().includes(lowerQuery) ||
+      pausa.subEstado.toLowerCase().includes(lowerQuery) ||
+      pausa.fechaPausa.includes(lowerQuery) ||
+      pausa.horaInicio.includes(lowerQuery) ||
+      pausa.horaFin.includes(lowerQuery) ||
+      (pausa.empleadoNombre && pausa.empleadoNombre.toLowerCase().includes(lowerQuery)) ||
+      pausa.observacion.toLowerCase().includes(lowerQuery)
+    );
+  });
 
   const confirmDelete = async () => {
     if (deleteDialog.pausa) {
@@ -62,14 +80,16 @@ export function PausaTable({ pausas, onEdit, onDelete, onSearch }: PausaTablePro
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Tiempos Fuera de Trabajo</CardTitle>
-            <div className="flex items-center gap-2 w-64">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="h-9"
-              />
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2 w-64">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="h-9"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -90,23 +110,23 @@ export function PausaTable({ pausas, onEdit, onDelete, onSearch }: PausaTablePro
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pausas.length === 0 ? (
+                {filteredPausas.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                       No se encontraron registros
                     </TableCell>
                   </TableRow>
                 ) : (
-                  pausas.map((pausa) => (
+                  filteredPausas.map((pausa) => (
                     <TableRow key={pausa.id}>
                       <TableCell className="font-medium">{pausa.id}</TableCell>
                       <TableCell>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pausa.estado === 'Visita'
-                              ? 'bg-blue-100 text-blue-800'
-                              : pausa.estado === 'Permisos'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-purple-100 text-purple-800'
+                            ? 'bg-blue-100 text-blue-800'
+                            : pausa.estado === 'Permisos'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-purple-100 text-purple-800'
                             }`}
                         >
                           {pausa.estado}

@@ -30,14 +30,12 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/src/infrastructure/utils/utils";
 import { toast } from "sonner";
-import { MockPersonalRepository } from "@/src/infrastructure/repositories/MockPersonalRepository";
-import { GetAllPersonalUseCase } from "@/src/application/use-cases/GetAllPersonalUseCase";
+import { TiemposFueraApiClient } from "@/src/infrastructure/api-clients/TiemposFueraApiClient";
 import { Separator } from "@/src/presentation/components/ui/separator";
 import { ApiPausaRepository } from "@/src/infrastructure/repositories/ApiPausaRepository";
 import { Personal } from "@/src/domain/entities/Personal";
 
-const personalRepository = new MockPersonalRepository();
-const getAllPersonalUseCase = new GetAllPersonalUseCase(personalRepository);
+const apiClient = new TiemposFueraApiClient();
 const pausaRepository = new ApiPausaRepository();
 
 interface ReportePausasData {
@@ -69,11 +67,12 @@ export default function PausasVisitasPage() {
 
   const loadEmpleados = async () => {
     try {
-      const personal = await getAllPersonalUseCase.execute();
-      setPersonalList(personal);
-      const empleadosList = personal.map((p) => ({
-        ci: p.ci,
-        nombre: `${p.nombres} ${p.apellidos}`,
+      // Obtener empleados de la API
+      const empleadosApi = await apiClient.getEmpleados();
+
+      const empleadosList = empleadosApi.map((e) => ({
+        ci: e.id.trim(),
+        nombre: e.name.trim(),
       }));
       setEmpleadosForSelect(empleadosList);
     } catch (error) {
@@ -82,8 +81,8 @@ export default function PausasVisitasPage() {
   };
 
   const handleConsultar = async () => {
-    if (!fechaInicio || !fechaFin) {
-      toast.error("Debes seleccionar ambas fechas");
+    if (!fechaInicio && !fechaFin && empleadoSeleccionado === "todos") {
+      toast.error("Debes seleccionar al menos un filtro (Fecha o Empleado)");
       return;
     }
 
@@ -98,20 +97,12 @@ export default function PausasVisitasPage() {
       const pausas = await pausaRepository.getFiltered(filters);
 
       const tableData: ReportePausasData[] = pausas.map((p) => {
-        // Encontrar info del empleado. Asumimos que p.empleadosIds[0] es la CI o ID
-        // Dependiendo de cómo guarde la API. El repositorio Mock usa IDs '001'.
-        // La API usa IDs de base de datos probablemente.
-        // Si no podemos mapear, mostraremos el ID.
-        // Pero el filtro por CI asume que enviamos CI.
-        const empId = p.empleadosIds[0];
-        const empleado = personalList.find((per) => per.ci === empId);
-
         return {
           tipo: p.estado,
           subTipo: p.subEstado,
-          nombres: empleado?.nombres || "Desconocido",
-          apellidos: empleado?.apellidos || "",
-          ci: empleado?.ci || empId,
+          nombres: p.empleadoNombre || "Desconocido",
+          apellidos: "", // API de pausas retorna nombre completo en un solo campo
+          ci: p.empleadosIds[0] || "",
           observacion: p.observacion,
           fecha: p.fechaPausa,
           horaInicio: p.horaInicio,
@@ -132,7 +123,61 @@ export default function PausasVisitasPage() {
   };
 
   const handleExportar = () => {
-    toast.info("Función de exportar en desarrollo");
+    if (datos.length === 0) return;
+
+    // Crear encabezados CSV
+    const headers = [
+      "Tipo",
+      "Sub Tipo",
+      "Nombres",
+      "Apellidos",
+      "CI",
+      "Observación",
+      "Fecha",
+      "Hora Inicio",
+      "Hora Fin",
+      "Fecha Edición",
+      "Usuario Edición"
+    ];
+
+    // Convertir datos a CSV
+    const csvContent = [
+      headers.join(","),
+      ...datos.map(row => [
+        `"${row.tipo}"`,
+        `"${row.subTipo}"`,
+        `"${row.nombres}"`,
+        `"${row.apellidos}"`,
+        `"${row.ci}"`,
+        `"${row.observacion}"`,
+        `"${row.fecha}"`,
+        `"${row.horaInicio}"`,
+        `"${row.horaFin}"`,
+        `"${row.fechaEdicion}"`,
+        `"${row.usuarioEdicion}"`
+      ].join(","))
+    ].join("\n");
+
+    // Crear blob y descargar
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `reporte_pausas_${format(new Date(), "yyyy-MM-dd")}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success("Reporte exportado exitosamente");
+  };
+
+  const handleLimpiar = () => {
+    setFechaInicio(undefined);
+    setFechaFin(undefined);
+    setEmpleadoSeleccionado("todos");
+    setDatos([]);
+    toast.success("Filtros limpiados");
   };
 
   return (
@@ -145,8 +190,16 @@ export default function PausasVisitasPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Filtros</CardTitle>
+          <Button
+            onClick={handleLimpiar}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground h-8"
+          >
+            Limpiar Filtros
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -240,7 +293,12 @@ export default function PausasVisitasPage() {
                 <Search className="h-4 w-4" />
                 {isLoading ? "Consultando..." : "Consultar"}
               </Button>
-              <Button onClick={handleExportar} variant="outline" className="gap-2">
+              <Button
+                onClick={handleExportar}
+                variant="outline"
+                className="gap-2"
+                disabled={datos.length === 0}
+              >
                 <Download className="h-4 w-4" />
                 Exportar
               </Button>
