@@ -11,16 +11,16 @@ import { SearchPausasUseCase } from '@/src/application/use-cases/SearchPausasUse
  * Permite cambiar fácilmente entre implementaciones Mock y APIs reales.
  * 
  * Configuración:
- * - USE_REAL_API_PAUSAS=true: Usa la API real de tiempos-fuera (puerto 5004)
- * - USE_REAL_API_PAUSAS=false: Usa datos mock para desarrollo
+ * - USE_REAL_API=true: Usa la API real
+ * - USE_REAL_API=false: Usa datos mock para desarrollo
  */
 
 // Control de uso de APIs reales vs Mock
 const USE_REAL_API_PAUSAS = process.env.USE_REAL_API_PAUSAS === 'true';
 
 // Instancias de repositorios
-const pausaRepository = USE_REAL_API_PAUSAS 
-  ? new ApiPausaRepository() 
+const pausaRepository = USE_REAL_API_PAUSAS
+  ? new ApiPausaRepository()
   : new MockPausaRepository();
 
 export async function GET(request: NextRequest) {
@@ -31,7 +31,23 @@ export async function GET(request: NextRequest) {
   try {
     switch (resource) {
       case 'pausas': {
-        if (query) {
+        const ci = searchParams.get('ci');
+        const fechaInicio = searchParams.get('fecha_inicio');
+        const fechaFin = searchParams.get('fecha_fin');
+
+        if (ci || fechaInicio || fechaFin) {
+          // Filtrado específico
+          const pausas = await pausaRepository.getFiltered({
+            ci: ci || undefined,
+            fechaInicio: fechaInicio || undefined,
+            fechaFin: fechaFin || undefined
+          });
+          return NextResponse.json({
+            success: true,
+            data: pausas,
+            source: USE_REAL_API_PAUSAS ? 'API Real (Puerto 5004)' : 'Mock Data',
+          });
+        } else if (query) {
           // Búsqueda de pausas
           const searchUseCase = new SearchPausasUseCase(pausaRepository);
           const pausas = await searchUseCase.execute(query);
@@ -93,9 +109,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error en orchestrator:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500 }
     );
@@ -158,9 +174,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error en orchestrator POST:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500 }
     );
@@ -193,9 +209,9 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Error en orchestrator PUT:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500 }
     );
@@ -235,9 +251,9 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Error en orchestrator DELETE:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500 }
     );

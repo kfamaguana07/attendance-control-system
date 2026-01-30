@@ -5,33 +5,36 @@ export class MockPausaRepository implements IPausaRepository {
   private pausas: Pausa[] = [
     new Pausa(
       1,
-      'Capacitación',
-      'Interna',
-      'Capacitación sobre nuevas políticas de la empresa',
+      'Visita',
+      'V_proveedores',
+      'Visita a proveedores para revisión de productos',
       ['001', '002'],
       '2026-01-18',
       '08:00',
-      '10:00'
+      '10:00',
+      'Juan Pérez'
     ),
     new Pausa(
       2,
       'Permisos',
-      'Médico',
+      'P_con_descuento',
       'Cita médica de rutina',
       ['001'],
       '2026-01-19',
       '14:00',
-      '16:00'
+      '16:00',
+      'Juan Pérez'
     ),
     new Pausa(
       3,
-      'Reunión',
-      'Departamental',
-      'Reunión mensual del departamento de ventas',
+      'Reunion',
+      'R_interna',
+      'Reunion mensual del departamento de ventas',
       ['002'],
       '2026-01-20',
       '09:00',
-      '11:00'
+      '11:00',
+      'María González'
     ),
   ];
 
@@ -55,7 +58,8 @@ export class MockPausaRepository implements IPausaRepository {
       pausaData.empleadosIds,
       pausaData.fechaPausa,
       pausaData.horaInicio,
-      pausaData.horaFin
+      pausaData.horaFin,
+      ''
     );
     this.pausas.push(newPausa);
     return Promise.resolve(newPausa);
@@ -75,7 +79,8 @@ export class MockPausaRepository implements IPausaRepository {
       pausaData.empleadosIds ?? this.pausas[index].empleadosIds,
       pausaData.fechaPausa ?? this.pausas[index].fechaPausa,
       pausaData.horaInicio ?? this.pausas[index].horaInicio,
-      pausaData.horaFin ?? this.pausas[index].horaFin
+      pausaData.horaFin ?? this.pausas[index].horaFin,
+      this.pausas[index].empleadoNombre
     );
 
     this.pausas[index] = updatedPausa;
@@ -100,6 +105,29 @@ export class MockPausaRepository implements IPausaRepository {
         pausa.observacion.toLowerCase().includes(lowerQuery) ||
         pausa.fechaPausa.includes(lowerQuery)
     );
+    return Promise.resolve(filtered);
+  }
+
+  async getFiltered(filters: { ci?: string; fechaInicio?: string; fechaFin?: string; }): Promise<Pausa[]> {
+    let filtered = [...this.pausas];
+
+    if (filters.ci) {
+      // Nota: En un entorno real, la búsqueda por CI debería verificar si el empleado existe.
+      // Aquí buscamos si el CI está en la lista de empleados de la pausa (que guardamos como IDs)
+      // O si tuviéramos acceso a los datos completos del empleado.
+      // Asumiendo que empleadosIds contiene CIs o IDs que podemos comparar.
+      const ci = filters.ci;
+      filtered = filtered.filter(p => p.empleadosIds.includes(ci));
+    }
+
+    if (filters.fechaInicio) {
+      filtered = filtered.filter(p => p.fechaPausa >= filters.fechaInicio!);
+    }
+
+    if (filters.fechaFin) {
+      filtered = filtered.filter(p => p.fechaPausa <= filters.fechaFin!);
+    }
+
     return Promise.resolve(filtered);
   }
 }

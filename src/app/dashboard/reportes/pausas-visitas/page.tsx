@@ -33,9 +33,12 @@ import { toast } from "sonner";
 import { MockPersonalRepository } from "@/src/infrastructure/repositories/MockPersonalRepository";
 import { GetAllPersonalUseCase } from "@/src/application/use-cases/GetAllPersonalUseCase";
 import { Separator } from "@/src/presentation/components/ui/separator";
+import { ApiPausaRepository } from "@/src/infrastructure/repositories/ApiPausaRepository";
+import { Personal } from "@/src/domain/entities/Personal";
 
 const personalRepository = new MockPersonalRepository();
 const getAllPersonalUseCase = new GetAllPersonalUseCase(personalRepository);
+const pausaRepository = new ApiPausaRepository();
 
 interface ReportePausasData {
   tipo: string;
@@ -54,7 +57,8 @@ interface ReportePausasData {
 export default function PausasVisitasPage() {
   const [fechaInicio, setFechaInicio] = useState<Date>();
   const [fechaFin, setFechaFin] = useState<Date>();
-  const [empleados, setEmpleados] = useState<Array<{ ci: string; nombre: string }>>([]);
+  const [personalList, setPersonalList] = useState<Personal[]>([]);
+  const [empleadosForSelect, setEmpleadosForSelect] = useState<Array<{ ci: string; nombre: string }>>([]);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState<string>("todos");
   const [datos, setDatos] = useState<ReportePausasData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,11 +70,12 @@ export default function PausasVisitasPage() {
   const loadEmpleados = async () => {
     try {
       const personal = await getAllPersonalUseCase.execute();
+      setPersonalList(personal);
       const empleadosList = personal.map((p) => ({
         ci: p.ci,
         nombre: `${p.nombres} ${p.apellidos}`,
       }));
-      setEmpleados(empleadosList);
+      setEmpleadosForSelect(empleadosList);
     } catch (error) {
       console.error("Error al cargar empleados:", error);
     }
@@ -84,37 +89,39 @@ export default function PausasVisitasPage() {
 
     setIsLoading(true);
     try {
-      // Simulación de datos - aquí conectarías con tu repositorio real
-      const mockData: ReportePausasData[] = [
-        {
-          tipo: "Capacitación",
-          subTipo: "Curso externo",
-          nombres: "Juan",
-          apellidos: "Pérez",
-          ci: "1234567890",
-          observacion: "Curso de React avanzado",
-          fecha: "2026-01-20",
-          horaInicio: "09:00:00",
-          horaFin: "11:00:00",
-          fechaEdicion: "2026-01-20 08:00:00",
-          usuarioEdicion: "admin",
-        },
-        {
-          tipo: "Reunión",
-          subTipo: "Reunión interna",
-          nombres: "María",
-          apellidos: "González",
-          ci: "0987654321",
-          observacion: "Reunión de planificación",
-          fecha: "2026-01-20",
-          horaInicio: "14:00:00",
-          horaFin: "15:30:00",
-          fechaEdicion: "2026-01-20 13:00:00",
-          usuarioEdicion: "admin",
-        },
-      ];
+      const filters = {
+        ci: empleadoSeleccionado !== "todos" ? empleadoSeleccionado : undefined,
+        fechaInicio: fechaInicio ? format(fechaInicio, "yyyy-MM-dd") : undefined,
+        fechaFin: fechaFin ? format(fechaFin, "yyyy-MM-dd") : undefined,
+      };
 
-      setDatos(mockData);
+      const pausas = await pausaRepository.getFiltered(filters);
+
+      const tableData: ReportePausasData[] = pausas.map((p) => {
+        // Encontrar info del empleado. Asumimos que p.empleadosIds[0] es la CI o ID
+        // Dependiendo de cómo guarde la API. El repositorio Mock usa IDs '001'.
+        // La API usa IDs de base de datos probablemente.
+        // Si no podemos mapear, mostraremos el ID.
+        // Pero el filtro por CI asume que enviamos CI.
+        const empId = p.empleadosIds[0];
+        const empleado = personalList.find((per) => per.ci === empId);
+
+        return {
+          tipo: p.estado,
+          subTipo: p.subEstado,
+          nombres: empleado?.nombres || "Desconocido",
+          apellidos: empleado?.apellidos || "",
+          ci: empleado?.ci || empId,
+          observacion: p.observacion,
+          fecha: p.fechaPausa,
+          horaInicio: p.horaInicio,
+          horaFin: p.horaFin,
+          fechaEdicion: "-", // No disponible en entidad Pausa actualmente
+          usuarioEdicion: "Sistema", // No disponible en entidad Pausa actualmente
+        };
+      });
+
+      setDatos(tableData);
       toast.success("Consulta realizada exitosamente");
     } catch (error) {
       toast.error("Error al consultar datos");
@@ -215,7 +222,7 @@ export default function PausasVisitasPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos</SelectItem>
-                    {empleados.map((emp) => (
+                    {empleadosForSelect.map((emp) => (
                       <SelectItem key={emp.ci} value={emp.ci}>
                         {emp.nombre}
                       </SelectItem>

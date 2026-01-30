@@ -18,8 +18,9 @@ export class Pausa {
     public empleadosIds: string[],
     public fechaPausa: string,
     public horaInicio: string,
-    public horaFin: string
-  ) {}
+    public horaFin: string,
+    public empleadoNombre?: string
+  ) { }
 
   get nombreCompleto(): string {
     return `${this.estado} - ${this.subEstado}`;
@@ -27,9 +28,9 @@ export class Pausa {
 
   static getSubEstadosPorEstado(estado: string): string[] {
     const subEstados: { [key: string]: string[] } = {
-      'Capacitación': ['Interna', 'Externa', 'Online', 'Presencial'],
-      'Permisos': ['Personal', 'Médico', 'Familiar', 'Otros'],
-      'Reunión': ['Departamental', 'Gerencial', 'Cliente', 'Equipo'],
+      'Visita': ['V_proveedores', 'V_clientes'],
+      'Permisos': ['P_con_descuento', 'P_sin_descuento'],
+      'Reunion': ['R_interna', 'R_externa'],
     };
     return subEstados[estado] || [];
   }

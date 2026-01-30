@@ -102,13 +102,12 @@ export function PausaTable({ pausas, onEdit, onDelete, onSearch }: PausaTablePro
                       <TableCell className="font-medium">{pausa.id}</TableCell>
                       <TableCell>
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            pausa.estado === 'Capacitación'
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pausa.estado === 'Visita'
                               ? 'bg-blue-100 text-blue-800'
                               : pausa.estado === 'Permisos'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-purple-100 text-purple-800'
-                          }`}
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-purple-100 text-purple-800'
+                            }`}
                         >
                           {pausa.estado}
                         </span>
@@ -118,8 +117,14 @@ export function PausaTable({ pausas, onEdit, onDelete, onSearch }: PausaTablePro
                       <TableCell>{pausa.horaInicio}</TableCell>
                       <TableCell>{pausa.horaFin}</TableCell>
                       <TableCell>
-                        <span className="text-xs bg-slate-100 px-2 py-1 rounded">
-                          {pausa.empleadosIds.length} empleado(s)
+                        <span className="text-sm">
+                          {pausa.empleadoNombre ? (
+                            <span className="font-medium text-slate-700">{pausa.empleadoNombre}</span>
+                          ) : (
+                            <span className="text-xs bg-slate-100 px-2 py-1 rounded">
+                              {pausa.empleadosIds.length} empleado(s)
+                            </span>
+                          )}
                         </span>
                       </TableCell>
                       <TableCell className="max-w-xs truncate">

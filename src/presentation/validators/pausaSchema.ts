@@ -3,8 +3,8 @@ import { z } from 'zod';
 export const pausaSchema = z.object({
   estado: z.string({ required_error: 'El estado es requerido' })
     .refine((val) => val !== '<<SELECCIONA>>', { message: 'Debe seleccionar un estado' })
-    .refine((val) => ['Capacitación', 'Permisos', 'Reunión'].includes(val), { 
-      message: 'El estado debe ser Capacitación, Permisos o Reunión' 
+    .refine((val) => ['Visita', 'Permisos', 'Reunion'].includes(val), {
+      message: 'El estado debe ser Visita, Permisos o Reunion'
     }),
   subEstado: z.string({ required_error: 'El sub estado es requerido' })
     .refine((val) => val !== '<<SELECCIONA>>', { message: 'Debe seleccionar un sub estado' }),

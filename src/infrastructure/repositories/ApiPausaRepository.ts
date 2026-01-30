@@ -25,7 +25,8 @@ export class ApiPausaRepository implements IPausaRepository {
       [apiPausa.empleado_id], // La API retorna un empleado por pausa
       apiPausa.fecha,
       apiPausa.hora_inicio,
-      apiPausa.hora_fin
+      apiPausa.hora_fin,
+      apiPausa.empleado_nombre?.trim()
     );
   }
 
@@ -145,7 +146,7 @@ export class ApiPausaRepository implements IPausaRepository {
     try {
       // Intentamos interpretar el query como una fecha (YYYY-MM-DD)
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-      
+
       if (dateRegex.test(query)) {
         // Búsqueda por fecha específica
         const apiPausas = await this.apiClient.getPausasByFecha(query);
@@ -154,8 +155,8 @@ export class ApiPausaRepository implements IPausaRepository {
         // Búsqueda general en todas las pausas
         const allPausas = await this.getAll();
         const lowerQuery = query.toLowerCase();
-        
-        return allPausas.filter(pausa => 
+
+        return allPausas.filter(pausa =>
           pausa.estado.toLowerCase().includes(lowerQuery) ||
           pausa.subEstado.toLowerCase().includes(lowerQuery) ||
           pausa.observacion.toLowerCase().includes(lowerQuery) ||
@@ -165,6 +166,37 @@ export class ApiPausaRepository implements IPausaRepository {
     } catch (error) {
       console.error(`Error al buscar pausas con query "${query}":`, error);
       throw new Error('No se pudo realizar la búsqueda');
+    }
+  }
+
+  /**
+   * Obtiene pausas filtradas por CI y rango de fechas
+   */
+  async getFiltered(filters: { ci?: string; fechaInicio?: string; fechaFin?: string; }): Promise<Pausa[]> {
+    try {
+      // Optimización: Si se busca por una fecha específica sin otros filtros, usamos el endpoint específico
+      if (
+        !filters.ci &&
+        filters.fechaInicio &&
+        filters.fechaFin &&
+        filters.fechaInicio === filters.fechaFin
+      ) {
+        const apiPausas = await this.apiClient.getPausasByFecha(filters.fechaInicio);
+        return apiPausas.map(p => this.mapApiResponseToDomain(p));
+      }
+
+      // Mapeamos los filtros del dominio a los parámetros de la API
+      const apiFilters = {
+        ci: filters.ci,
+        fecha_inicio: filters.fechaInicio,
+        fecha_fin: filters.fechaFin
+      };
+
+      const apiPausas = await this.apiClient.getPausas(apiFilters);
+      return apiPausas.map(p => this.mapApiResponseToDomain(p));
+    } catch (error) {
+      console.error('Error al obtener pausas filtradas:', error);
+      throw new Error('No se pudieron obtener las pausas filtradas');
     }
   }
 }

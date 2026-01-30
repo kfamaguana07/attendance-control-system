@@ -33,9 +33,9 @@ interface PausaFormProps {
   empleados: Array<{ id: string; nombre: string }>;
 }
 
-const ESTADOS_OPTIONS = ['Capacitación', 'Permisos', 'Reunión'];
+const ESTADOS_OPTIONS = ['Visita', 'Permisos', 'Reunion'];
 const HORAS_OPTIONS = [
-  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', 
+  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
   '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'
 ];
 
@@ -65,10 +65,8 @@ export function PausaForm({ open, onOpenChange, pausa, onSubmit, empleados }: Pa
     if (estado && estado !== '<<SELECCIONA>>') {
       const subEstados = Pausa.getSubEstadosPorEstado(estado);
       setSubEstadosDisponibles(subEstados);
-      setSubEstado('');
     } else {
       setSubEstadosDisponibles([]);
-      setSubEstado('');
     }
   }, [estado]);
 
@@ -80,21 +78,26 @@ export function PausaForm({ open, onOpenChange, pausa, onSubmit, empleados }: Pa
     shouldRevalidate: 'onInput',
     defaultValue: pausa
       ? {
-          estado: pausa.estado,
-          subEstado: pausa.subEstado,
-          observacion: pausa.observacion,
-          empleadosIds: pausa.empleadosIds,
-          fechaPausa: pausa.fechaPausa,
-          horaInicio: pausa.horaInicio,
-          horaFin: pausa.horaFin,
-        }
+        estado: pausa.estado,
+        subEstado: pausa.subEstado,
+        observacion: pausa.observacion,
+        empleadosIds: pausa.empleadosIds,
+        fechaPausa: pausa.fechaPausa,
+        horaInicio: pausa.horaInicio,
+        horaFin: pausa.horaFin,
+      }
       : undefined,
   });
+
+  const handleEstadoChange = (value: string) => {
+    setEstado(value);
+    setSubEstado('');
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     // Agregar empleados seleccionados al formData
     formData.delete('empleadosIds');
     empleadosSeleccionados.forEach(id => {
@@ -155,7 +158,7 @@ export function PausaForm({ open, onOpenChange, pausa, onSubmit, empleados }: Pa
                 <Select
                   name={fields.estado.name}
                   value={estado}
-                  onValueChange={setEstado}
+                  onValueChange={handleEstadoChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="<<SELECCIONA>>" />
@@ -312,9 +315,9 @@ export function PausaForm({ open, onOpenChange, pausa, onSubmit, empleados }: Pa
           </div>
 
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
             >
               Cancelar
