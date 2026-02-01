@@ -1,0 +1,111 @@
+services:
+  db:
+    image: postgres:16
+    container_name: mi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: daniel
+      POSTGRES_PASSWORD: espe123
+      POSTGRES_DB: personal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-personal.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - api-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U daniel -d personal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api-personal:
+    image: alexdaniel593/attendance_control_system:personal
+    container_name: api-personal
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - api-net
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api-recesos:
+    image: alexdaniel593/attendance_control_system:recesos
+    container_name: api-recesos
+    restart: unless-stopped
+    ports:
+      - "5002:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - api-net
+    depends_on:
+      - db
+
+  api-turnos:
+    image: alexdaniel593/attendance_control_system:turnos
+    container_name: api-turnos
+    restart: unless-stopped
+    ports:
+      - "5003:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - api-net
+    depends_on:
+      - db
+
+  api-tiempos-fuera:
+    image: alexdaniel593/attendance_control_system:tiempos-fuera
+    container_name: api-tiempos-fuera
+    restart: unless-stopped
+    ports:
+      - "5004:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - api-net
+    depends_on:
+      - db
+
+  api-pausas:
+    image: alexdaniel593/attendance_control_system:pausas
+    container_name: api-pausas
+    restart: unless-stopped
+    ports:
+      - "5005:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - api-net
+    depends_on:
+      - db
+
+networks:
+  api-net:
+    name: api-net
+    driver: bridge
+
+volumes:
+  postgres-data:

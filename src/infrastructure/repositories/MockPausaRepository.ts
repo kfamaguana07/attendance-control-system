@@ -27,9 +27,9 @@ export class MockPausaRepository implements IPausaRepository {
     ),
     new Pausa(
       3,
-      'Reunion',
+      'Reunión',
       'R_interna',
-      'Reunion mensual del departamento de ventas',
+      'Reunión mensual del departamento de ventas',
       ['002'],
       '2026-01-20',
       '09:00',

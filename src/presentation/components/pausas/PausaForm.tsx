@@ -33,11 +33,7 @@ interface PausaFormProps {
   empleados: Array<{ id: string; nombre: string }>;
 }
 
-const ESTADOS_OPTIONS = ['Visita', 'Permisos', 'Reunion'];
-const HORAS_OPTIONS = [
-  '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
-  '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'
-];
+const ESTADOS_OPTIONS = ['Visita', 'Permisos', 'Reunión'];
 
 export function PausaForm({ open, onOpenChange, pausa, onSubmit, empleados }: PausaFormProps) {
   const [estado, setEstado] = useState('');
@@ -267,21 +263,13 @@ export function PausaForm({ open, onOpenChange, pausa, onSubmit, empleados }: Pa
                   <Label htmlFor={fields.horaInicio.id}>
                     Hora Inicio <span className="text-destructive">*</span>
                   </Label>
-                  <Select
+                  <Input
+                    type="time"
+                    id={fields.horaInicio.id}
                     name={fields.horaInicio.name}
                     defaultValue={pausa?.horaInicio}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HORAS_OPTIONS.map((hora) => (
-                        <SelectItem key={hora} value={hora}>
-                          {hora}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    step="1"
+                  />
                   {fields.horaInicio.errors && (
                     <p className="text-sm text-destructive">{fields.horaInicio.errors[0]}</p>
                   )}
@@ -291,21 +279,13 @@ export function PausaForm({ open, onOpenChange, pausa, onSubmit, empleados }: Pa
                   <Label htmlFor={fields.horaFin.id}>
                     Hora Fin <span className="text-destructive">*</span>
                   </Label>
-                  <Select
+                  <Input
+                    type="time"
+                    id={fields.horaFin.id}
                     name={fields.horaFin.name}
                     defaultValue={pausa?.horaFin}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HORAS_OPTIONS.map((hora) => (
-                        <SelectItem key={hora} value={hora}>
-                          {hora}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    step="1"
+                  />
                   {fields.horaFin.errors && (
                     <p className="text-sm text-destructive">{fields.horaFin.errors[0]}</p>
                   )}

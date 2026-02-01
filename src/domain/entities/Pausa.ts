@@ -30,7 +30,7 @@ export class Pausa {
     const subEstados: { [key: string]: string[] } = {
       'Visita': ['V_proveedores', 'V_clientes'],
       'Permisos': ['P_con_descuento', 'P_sin_descuento'],
-      'Reunion': ['R_interna', 'R_externa'],
+      'Reunión': ['R_interna', 'R_externa'],
     };
     return subEstados[estado] || [];
   }

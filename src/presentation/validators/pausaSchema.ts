@@ -3,8 +3,8 @@ import { z } from 'zod';
 export const pausaSchema = z.object({
   estado: z.string({ required_error: 'El estado es requerido' })
     .refine((val) => val !== '<<SELECCIONA>>', { message: 'Debe seleccionar un estado' })
-    .refine((val) => ['Visita', 'Permisos', 'Reunion'].includes(val), {
-      message: 'El estado debe ser Visita, Permisos o Reunion'
+    .refine((val) => ['Visita', 'Permisos', 'Reunión'].includes(val), {
+      message: 'El estado debe ser Visita, Permisos o Reunión'
     }),
   subEstado: z.string({ required_error: 'El sub estado es requerido' })
     .refine((val) => val !== '<<SELECCIONA>>', { message: 'Debe seleccionar un sub estado' }),
@@ -20,8 +20,17 @@ export const pausaSchema = z.object({
   horaFin: z.string({ required_error: 'La hora de fin es requerida' })
     .min(1, 'La hora de fin es requerida'),
 }).refine((data) => {
-  const inicio = parseInt(data.horaInicio.replace(':', ''));
-  const fin = parseInt(data.horaFin.replace(':', ''));
+  // Convertir horas a segundos totales para comparación precisa
+  const parseTime = (time: string) => {
+    const parts = time.split(':');
+    const hours = parseInt(parts[0] || '0');
+    const minutes = parseInt(parts[1] || '0');
+    const seconds = parseInt(parts[2] || '0');
+    return hours * 3600 + minutes * 60 + seconds;
+  };
+  
+  const inicio = parseTime(data.horaInicio);
+  const fin = parseTime(data.horaFin);
   return fin > inicio;
 }, {
   message: 'La hora de fin debe ser mayor a la hora de inicio',
