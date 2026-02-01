@@ -16,9 +16,6 @@ import {
   SelectValue,
 } from '@/src/presentation/components/ui/select';
 import { personalSchema } from '@/src/presentation/validators/personalSchema';
-import { MockPersonalRepository } from '@/src/infrastructure/repositories/MockPersonalRepository';
-import { CreatePersonalUseCase } from '@/src/application/use-cases/CreatePersonalUseCase';
-import { UpdatePersonalUseCase } from '@/src/application/use-cases/UpdatePersonalUseCase';
 import { Personal } from '@/src/domain/entities/Personal';
 import { Area } from '@/src/domain/entities/Area';
 import { 
@@ -29,10 +26,6 @@ import {
   BreakLabels,
   AlmuerzoLabels
 } from '@/src/domain/enums/Catalogos';
-
-const personalRepository = new MockPersonalRepository();
-const createPersonalUseCase = new CreatePersonalUseCase(personalRepository);
-const updatePersonalUseCase = new UpdatePersonalUseCase(personalRepository);
 
 interface PersonalFormProps {
   selectedPersonal?: Personal | null;
@@ -121,10 +114,41 @@ export function PersonalFormComplete({ selectedPersonal, onSuccess, onCancel, ar
 
       try {
         if (selectedPersonal) {
-          await updatePersonalUseCase.execute(selectedPersonal.cl, submission.value);
+          // Actualizar empleado existente
+          const response = await fetch('/api/orchestrator', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              resource: 'personal',
+              id: selectedPersonal.ci,
+              data: submission.value,
+            }),
+          });
+          
+          const result = await response.json();
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Error al actualizar personal');
+          }
+          
           toast.success('Personal actualizado exitosamente');
         } else {
-          await createPersonalUseCase.execute(submission.value);
+          // Crear nuevo empleado
+          const response = await fetch('/api/orchestrator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              resource: 'personal',
+              data: submission.value,
+            }),
+          });
+          
+          const result = await response.json();
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Error al crear personal');
+          }
+          
           toast.success('Personal creado exitosamente');
         }
         onSuccess();

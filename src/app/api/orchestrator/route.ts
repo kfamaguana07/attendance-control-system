@@ -3,6 +3,11 @@ import { ApiPausaRepository } from '@/src/infrastructure/repositories/ApiPausaRe
 import { MockPausaRepository } from '@/src/infrastructure/repositories/MockPausaRepository';
 import { GetAllPausasUseCase } from '@/src/application/use-cases/GetAllPausasUseCase';
 import { SearchPausasUseCase } from '@/src/application/use-cases/SearchPausasUseCase';
+import { ApiPersonalRepository } from '@/src/infrastructure/repositories/ApiPersonalRepository';
+import { MockPersonalRepository } from '@/src/infrastructure/repositories/MockPersonalRepository';
+import { GetAllPersonalUseCase } from '@/src/application/use-cases/GetAllPersonalUseCase';
+import { CreatePersonalUseCase } from '@/src/application/use-cases/CreatePersonalUseCase';
+import { UpdatePersonalUseCase } from '@/src/application/use-cases/UpdatePersonalUseCase';
 
 /**
  * API Orchestrator - Orquestación de llamadas a APIs externas
@@ -17,11 +22,16 @@ import { SearchPausasUseCase } from '@/src/application/use-cases/SearchPausasUse
 
 // Control de uso de APIs reales vs Mock
 const USE_REAL_API_PAUSAS = process.env.USE_REAL_API_PAUSAS === 'true';
+const USE_REAL_API_PERSONAL = process.env.USE_REAL_API_PERSONAL === 'true';
 
 // Instancias de repositorios
 const pausaRepository = USE_REAL_API_PAUSAS
   ? new ApiPausaRepository()
   : new MockPausaRepository();
+
+const personalRepository = USE_REAL_API_PERSONAL
+  ? new ApiPersonalRepository()
+  : new MockPersonalRepository();
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -68,29 +78,34 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      case 'personal':
-        return NextResponse.json({
-          success: true,
-          data: [
-            {
-              cl: '001',
-              id_a: 1,
-              id_t: 1,
-              id_b: 1,
-              id_ba: 1,
-              nombres: 'Juan',
-              apellidos: 'Pérez García',
-              direccion: 'Av. Principal 123',
-              telefonos: '555-0001',
-              correo: 'juan.perez@example.com',
-              fechaNacimiento: '1990-01-15',
-              fechaIngreso: '2020-03-01',
-              fechaContrato: '2020-03-01',
-              salario: 2500.00,
-            },
-          ],
-          source: 'Mock Data',
-        });
+      case 'personal': {
+        const ci = searchParams.get('ci');
+        
+        if (ci) {
+          // Obtener un empleado específico por CI
+          const personal = await personalRepository.findById(ci);
+          if (!personal) {
+            return NextResponse.json(
+              { success: false, error: 'Empleado no encontrado' },
+              { status: 404 }
+            );
+          }
+          return NextResponse.json({
+            success: true,
+            data: personal,
+            source: USE_REAL_API_PERSONAL ? 'API Real (Puerto 5001)' : 'Mock Data',
+          });
+        } else {
+          // Obtener todos los empleados
+          const getAllUseCase = new GetAllPersonalUseCase(personalRepository);
+          const personal = await getAllUseCase.execute();
+          return NextResponse.json({
+            success: true,
+            data: personal,
+            source: USE_REAL_API_PERSONAL ? 'API Real (Puerto 5001)' : 'Mock Data',
+          });
+        }
+      }
 
       case 'attendance':
         return NextResponse.json({
@@ -135,17 +150,17 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'personal':
-        // Simular creación de personal
+      case 'personal': {
+        // Crear personal usando el repositorio configurado
+        const createUseCase = new CreatePersonalUseCase(personalRepository);
+        const personal = await createUseCase.execute(data);
         return NextResponse.json({
           success: true,
-          data: {
-            cl: String(Math.floor(Math.random() * 1000)).padStart(3, '0'),
-            ...data,
-          },
+          data: personal,
           message: 'Personal creado exitosamente',
-          source: 'Mock Data',
+          source: USE_REAL_API_PERSONAL ? 'API Real (Puerto 5001)' : 'Mock Data',
         });
+      }
 
       case 'login':
         // Simular autenticación
@@ -200,6 +215,18 @@ export async function PUT(request: NextRequest) {
         });
       }
 
+      case 'personal': {
+        // Actualizar personal usando el repositorio configurado
+        const updateUseCase = new UpdatePersonalUseCase(personalRepository);
+        const personal = await updateUseCase.execute(id, data);
+        return NextResponse.json({
+          success: true,
+          data: personal,
+          message: 'Personal actualizado exitosamente',
+          source: USE_REAL_API_PERSONAL ? 'API Real (Puerto 5001)' : 'Mock Data',
+        });
+      }
+
       default:
         return NextResponse.json(
           { success: false, error: 'Recurso no encontrado' },
@@ -239,6 +266,16 @@ export async function DELETE(request: NextRequest) {
           success,
           message: success ? 'Pausa eliminada exitosamente' : 'No se pudo eliminar la pausa',
           source: USE_REAL_API_PAUSAS ? 'API Real (Puerto 5004)' : 'Mock Data',
+        });
+      }
+
+      case 'personal': {
+        // Eliminar personal usando el repositorio configurado
+        await personalRepository.delete(id);
+        return NextResponse.json({
+          success: true,
+          message: 'Personal eliminado exitosamente',
+          source: USE_REAL_API_PERSONAL ? 'API Real (Puerto 5001)' : 'Mock Data',
         });
       }
 

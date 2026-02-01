@@ -20,13 +20,16 @@ export const API_CONFIG = {
   },
 
   /**
-   * API de Personal (Pendiente de implementar)
-   * Puerto: TBD
+   * API de Personal
+   * Puerto: 5001
+   * Endpoints: /personal, /personal/<ci>, /personal/search
    */
   PERSONAL: {
     BASE_URL: process.env.NEXT_PUBLIC_API_PERSONAL_URL,
     ENDPOINTS: {
-      // TODO: Definir endpoints cuando se implemente la API
+      PERSONAL: '/personal',
+      PERSONAL_BY_CI: (ci: string) => `/personal/${ci}`,
+      SEARCH: '/personal/search',
     },
   },
 

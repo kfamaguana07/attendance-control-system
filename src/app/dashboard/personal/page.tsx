@@ -13,16 +13,12 @@ import {
 } from '@/src/presentation/components/ui/dialog';
 import { Personal } from '@/src/domain/entities/Personal';
 import { Area } from '@/src/domain/entities/Area';
-import { MockPersonalRepository } from '@/src/infrastructure/repositories/MockPersonalRepository';
 import { MockAreaRepository } from '@/src/infrastructure/repositories/MockAreaRepository';
-import { GetAllPersonalUseCase } from '@/src/application/use-cases/GetAllPersonalUseCase';
 import { GetAllAreasUseCase } from '@/src/application/use-cases/GetAllAreasUseCase';
 import { PersonalTable } from '@/src/presentation/components/personal/PersonalTable';
 import { PersonalFormComplete } from '@/src/presentation/components/personal/PersonalFormComplete';
 
-const personalRepository = new MockPersonalRepository();
 const areaRepository = new MockAreaRepository();
-const getAllPersonalUseCase = new GetAllPersonalUseCase(personalRepository);
 const getAllAreasUseCase = new GetAllAreasUseCase(areaRepository);
 
 export default function PersonalPage() {
@@ -37,10 +33,37 @@ export default function PersonalPage() {
   const loadPersonal = async () => {
     try {
       setIsLoading(true);
-      const [personalData, areasData] = await Promise.all([
-        getAllPersonalUseCase.execute(),
-        getAllAreasUseCase.execute(),
-      ]);
+      
+      // Cargar personal desde el orquestador
+      const personalResponse = await fetch('/api/orchestrator?resource=personal');
+      const personalResult = await personalResponse.json();
+      
+      if (!personalResult.success) {
+        throw new Error(personalResult.error || 'Error al cargar personal');
+      }
+      
+      // Convertir los datos al formato de Personal entity
+      const personalData = personalResult.data.map((p: any) => new Personal(
+        p.cl,
+        p.ci,
+        p.id_a,
+        p.id_t,
+        p.id_b,
+        p.id_ba,
+        p.nombres,
+        p.apellidos,
+        p.direccion,
+        p.telefonos,
+        p.correo,
+        p.fechaNacimiento,
+        p.fechaIngreso,
+        p.fechaContrato,
+        p.salario
+      ));
+      
+      // Cargar áreas
+      const areasData = await getAllAreasUseCase.execute();
+      
       setPersonal(personalData);
       setFilteredPersonal(personalData);
       setAreas(areasData);
@@ -98,9 +121,24 @@ export default function PersonalPage() {
   };
 
   const handleDelete = async (ci: string) => {
-    // Aquí implementarás la lógica de eliminación cuando tengas el use case
-    toast.success('Personal eliminado exitosamente');
-    loadPersonal();
+    try {
+      const response = await fetch(`/api/orchestrator?resource=personal&id=${ci}`, {
+        method: 'DELETE',
+      });
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Error al eliminar personal');
+      }
+      
+      toast.success('Personal eliminado exitosamente');
+      loadPersonal();
+    } catch (error) {
+      toast.error('Error al eliminar personal', {
+        description: error instanceof Error ? error.message : 'Error desconocido',
+      });
+    }
   };
 
   return (
@@ -132,14 +170,16 @@ export default function PersonalPage() {
       </div>
 
       {/* Tabla de Personal */}
-      <div className="border rounded-lg bg-white">
-        <PersonalTable 
-          personal={filteredPersonal} 
-          isLoading={isLoading}
-          onSelectPersonal={handleSelectPersonal}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+      <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto max-w-full">
+            <PersonalTable 
+            personal={filteredPersonal} 
+            isLoading={isLoading}
+            onSelectPersonal={handleSelectPersonal}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </div>
       </div>
 
       {/* Modal de Formulario */}

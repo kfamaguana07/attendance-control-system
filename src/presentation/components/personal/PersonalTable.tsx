@@ -68,8 +68,7 @@ export function PersonalTable({ personal, isLoading, onSelectPersonal, onEdit, o
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <Table>
+      <Table>
           <TableHeader>
             <TableRow>
               <TableHead>CI</TableHead>
@@ -136,7 +135,6 @@ export function PersonalTable({ personal, isLoading, onSelectPersonal, onEdit, o
             ))}
           </TableBody>
         </Table>
-      </div>
 
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open })}>
         <AlertDialogContent>
