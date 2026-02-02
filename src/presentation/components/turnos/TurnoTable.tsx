@@ -46,12 +46,7 @@ export function TurnoTable({ turnos, onEdit, onDelete, onSearch }: TurnoTablePro
 
   const confirmDelete = async () => {
     if (deleteDialog.turno) {
-      try {
-        await onDelete(deleteDialog.turno.id);
-        toast.success('Turno eliminado exitosamente');
-      } catch (error) {
-        toast.error('Error al eliminar el turno');
-      }
+      await onDelete(deleteDialog.turno.id);
     }
     setDeleteDialog({ open: false });
   };

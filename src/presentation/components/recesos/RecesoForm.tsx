@@ -234,7 +234,7 @@ export function RecesoForm({ receso, onSubmit, onCancel }: RecesoFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="hora_total">Total</Label>
+        <Label htmlFor="hora_total">Hora fin</Label>
         <Input
           id="hora_total"
           name="hora_total"

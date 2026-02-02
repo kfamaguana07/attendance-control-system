@@ -40,19 +40,56 @@ const HORAS_OPTIONS = [
   '19:00:00', '19:30:00', '20:00:00', '20:30:00'
 ];
 
+function normalizeTimeToHHMMSS(value?: string | null): string {
+  if (!value) return '';
+
+  const trimmed = value.trim();
+  // If API returns datetime/ISO, keep only the time portion.
+  // Examples handled: "2026-02-01T07:00:00", "2026-02-01 07:00:00"
+  const timePart = trimmed.includes('T')
+    ? trimmed.split('T')[1]
+    : trimmed.includes(' ')
+      ? trimmed.split(' ')[trimmed.split(' ').length - 1]
+      : trimmed;
+
+  // Drop timezone/millis if present: "07:00:00.000Z" -> "07:00:00"
+  const clean = timePart.replace(/Z$/i, '').split('.')[0];
+  const parts = clean.split(':');
+
+  if (parts.length === 2) {
+    const [hh, mm] = parts;
+    return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}:00`;
+  }
+
+  if (parts.length >= 3) {
+    const [hh, mm, ss] = parts;
+    return `${hh.padStart(2, '0')}:${mm.padStart(2, '0')}:${(ss ?? '00').padStart(2, '0')}`;
+  }
+
+  return '';
+}
+
+function normalizeTipo(value?: string | null): string {
+  if (!value) return '';
+  const upper = value.trim().toUpperCase();
+  if (upper === 'N' || upper === 'NORMAL') return 'NORMAL';
+  if (upper === 'A' || upper === 'ADICIONAL') return 'ADICIONAL';
+  return upper;
+}
+
 export function TurnoForm({ open, onOpenChange, turno, onSubmit }: TurnoFormProps) {
-  const [horaInicio, setHoraInicio] = useState('');
-  const [horaFin, setHoraFin] = useState('');
-  const [horaTotal, setHoraTotal] = useState('00:00:00');
-  const [tipo, setTipo] = useState('');
+  const [horaInicio, setHoraInicio] = useState(normalizeTimeToHHMMSS(turno?.horaInicio) || '');
+  const [horaFin, setHoraFin] = useState(normalizeTimeToHHMMSS(turno?.horaFin) || '');
+  const [horaTotal, setHoraTotal] = useState(normalizeTimeToHHMMSS(turno?.horaTotal) || '00:00:00');
+  const [tipo, setTipo] = useState(normalizeTipo(turno?.tipo) || '');
 
   useEffect(() => {
     if (open) {
       if (turno) {
-        setHoraInicio(turno.horaInicio);
-        setHoraFin(turno.horaFin);
-        setHoraTotal(turno.horaTotal);
-        setTipo(turno.tipo);
+        setHoraInicio(normalizeTimeToHHMMSS(turno.horaInicio) || '');
+        setHoraFin(normalizeTimeToHHMMSS(turno.horaFin) || '');
+        setHoraTotal(normalizeTimeToHHMMSS(turno.horaTotal) || '00:00:00');
+        setTipo(normalizeTipo(turno.tipo) || '');
       } else {
         setHoraInicio('');
         setHoraFin('');
@@ -129,7 +166,7 @@ export function TurnoForm({ open, onOpenChange, turno, onSubmit }: TurnoFormProp
               : 'Complete el formulario para registrar un nuevo turno'}
           </DialogDescription>
         </DialogHeader>
-        <form id={form.id} onSubmit={handleSubmit}>
+        <form id={form.id} onSubmit={handleSubmit} key={turno?.id || 'new'}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Columna izquierda */}
             <div className="space-y-4">
@@ -190,7 +227,6 @@ export function TurnoForm({ open, onOpenChange, turno, onSubmit }: TurnoFormProp
                   name={fields.horaTotal.name}
                   value={horaTotal}
                   readOnly
-                  disabled
                   className="bg-muted"
                 />
               </div>

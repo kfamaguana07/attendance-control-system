@@ -11,21 +11,8 @@ import {
   DialogTitle,
 } from '@/src/presentation/components/ui/dialog';
 import { Receso } from '@/src/domain/entities/Receso';
-import { MockRecesoRepository } from '@/src/infrastructure/repositories/MockRecesoRepository';
-import { GetAllRecesosUseCase } from '@/src/application/use-cases/GetAllRecesosUseCase';
-import { CreateRecesoUseCase } from '@/src/application/use-cases/CreateRecesoUseCase';
-import { UpdateRecesoUseCase } from '@/src/application/use-cases/UpdateRecesoUseCase';
-import { DeleteRecesoUseCase } from '@/src/application/use-cases/DeleteRecesoUseCase';
-import { SearchRecesosUseCase } from '@/src/application/use-cases/SearchRecesosUseCase';
 import { RecesoTable } from '@/src/presentation/components/recesos/RecesoTable';
 import { RecesoForm } from '@/src/presentation/components/recesos/RecesoForm';
-
-const recesoRepository = new MockRecesoRepository();
-const getAllRecesosUseCase = new GetAllRecesosUseCase(recesoRepository);
-const createRecesoUseCase = new CreateRecesoUseCase(recesoRepository);
-const updateRecesoUseCase = new UpdateRecesoUseCase(recesoRepository);
-const deleteRecesoUseCase = new DeleteRecesoUseCase(recesoRepository);
-const searchRecesosUseCase = new SearchRecesosUseCase(recesoRepository);
 
 export default function RecesosPage() {
   const [recesos, setRecesos] = useState<Receso[]>([]);
@@ -34,8 +21,26 @@ export default function RecesosPage() {
 
   const loadRecesos = async () => {
     try {
-      const data = await getAllRecesosUseCase.execute();
-      setRecesos(data);
+      const response = await fetch('/api/orchestrator?resource=recesos');
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Error al cargar recesos');
+      }
+      
+      // Convertir los datos al formato de Receso entity
+      const recesosData = result.data.map((r: any) => new Receso(
+        r.id,
+        r.id_t,
+        r.hora_inicio,
+        r.hora_fin,
+        r.hora_total,
+        r.nombre,
+        r.descripcion,
+        r.tipo
+      ));
+      
+      setRecesos(recesosData);
     } catch (error) {
       toast.error('Error al cargar recesos', {
         description: error instanceof Error ? error.message : 'Error desconocido',
@@ -49,20 +54,75 @@ export default function RecesosPage() {
 
   const handleSearch = async (query: string) => {
     try {
-      const data = await searchRecesosUseCase.execute(query);
-      setRecesos(data);
+      if (!query.trim()) {
+        loadRecesos();
+        return;
+      }
+      
+      const response = await fetch(`/api/orchestrator?resource=recesos&query=${encodeURIComponent(query)}`);
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Error en la búsqueda');
+      }
+      
+      const recesosData = result.data.map((r: any) => new Receso(
+        r.id,
+        r.id_t,
+        r.hora_inicio,
+        r.hora_fin,
+        r.hora_total,
+        r.nombre,
+        r.descripcion,
+        r.tipo
+      ));
+      
+      setRecesos(recesosData);
     } catch (error) {
-      toast.error('Error en la búsqueda');
+      toast.error('Error en la búsqueda', {
+        description: error instanceof Error ? error.message : 'Error desconocido',
+      });
     }
   };
 
   const handleSubmit = async (data: any) => {
     try {
       if (selectedReceso) {
-        await updateRecesoUseCase.execute(selectedReceso.id, data);
+        // Actualizar receso existente
+        const response = await fetch('/api/orchestrator', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource: 'recesos',
+            id: selectedReceso.id,
+            data,
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Error al actualizar receso');
+        }
+        
         toast.success('Receso actualizado exitosamente');
       } else {
-        await createRecesoUseCase.execute(data);
+        // Crear nuevo receso
+        const response = await fetch('/api/orchestrator', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource: 'recesos',
+            data,
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Error al crear receso');
+        }
+        
         toast.success('Receso creado exitosamente');
       }
       setOpenModal(false);
@@ -81,12 +141,10 @@ export default function RecesosPage() {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deleteRecesoUseCase.execute(id);
-      loadRecesos();
-    } catch (error) {
-      toast.error('Error al eliminar');
-    }
+    toast.warning('Funcionalidad no disponible', {
+      description: 'La API de Recesos no soporta eliminación. Esta funcionalidad está pendiente de desarrollo.',
+      duration: 5000,
+    });
   };
 
   const handleNewReceso = () => {

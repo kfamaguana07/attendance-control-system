@@ -13,6 +13,25 @@ export class ApiPausaRepository implements IPausaRepository {
     this.apiClient = new TiemposFueraApiClient();
   }
 
+  private normalizeTimeToHHMM(value: string | null | undefined): string {
+    if (!value) return '';
+
+    const trimmed = value.trim();
+    const timePart = trimmed.includes('T')
+      ? trimmed.split('T')[1]
+      : trimmed.includes(' ')
+        ? trimmed.split(' ')[trimmed.split(' ').length - 1]
+        : trimmed;
+
+    const clean = timePart.replace(/Z$/i, '').split('.')[0];
+    const parts = clean.split(':');
+    const hh = (parts[0] ?? '').padStart(2, '0');
+    const mm = (parts[1] ?? '').padStart(2, '0');
+
+    // La API de Tiempos Fuera suele trabajar con precisión a minutos.
+    return `${hh}:${mm}`;
+  }
+
   /**
    * Convierte la respuesta de la API al modelo de dominio Pausa
    */
@@ -70,8 +89,8 @@ export class ApiPausaRepository implements IPausaRepository {
         subestado: pausaData.subEstado,
         observacion: pausaData.observacion,
         fecha: pausaData.fechaPausa,
-        horaInicio: pausaData.horaInicio,
-        horaFin: pausaData.horaFin,
+        horaInicio: this.normalizeTimeToHHMM(pausaData.horaInicio),
+        horaFin: this.normalizeTimeToHHMM(pausaData.horaFin),
         usuario: 'SISTEMA', // TODO: Obtener del contexto de usuario autenticado
       });
 
@@ -104,7 +123,7 @@ export class ApiPausaRepository implements IPausaRepository {
     try {
       const response = await this.apiClient.updatePausa(id, {
         observacion: pausaData.observacion,
-        horaFin: pausaData.horaFin,
+        horaFin: this.normalizeTimeToHHMM(pausaData.horaFin),
         usuario: 'SISTEMA', // TODO: Obtener del contexto de usuario autenticado
       });
 

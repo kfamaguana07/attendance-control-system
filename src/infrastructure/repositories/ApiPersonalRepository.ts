@@ -22,8 +22,8 @@ export class ApiPersonalRepository implements IPersonalRepository {
       apiPersonal.ci,
       apiPersonal.id_a,
       apiPersonal.id_t,
-      0, // id_b - no viene en la API, valor por defecto
-      0, // id_ba - no viene en la API, valor por defecto
+      apiPersonal.id_b || 0, // id_b puede ser null en la API
+      apiPersonal.id_ba || 0, // id_ba puede ser null en la API
       apiPersonal.nombres,
       apiPersonal.apellidos,
       apiPersonal.direccion,
@@ -103,8 +103,13 @@ export class ApiPersonalRepository implements IPersonalRepository {
     try {
       const updateData: any = {};
 
+      const isFiniteNumber = (value: unknown): value is number =>
+        typeof value === 'number' && Number.isFinite(value);
+
       if (personalData.id_a !== undefined) updateData.id_a = personalData.id_a;
       if (personalData.id_t !== undefined) updateData.id_t = personalData.id_t;
+      if (personalData.id_b !== undefined && isFiniteNumber(personalData.id_b)) updateData.id_b = personalData.id_b;
+      if (personalData.id_ba !== undefined && isFiniteNumber(personalData.id_ba)) updateData.id_ba = personalData.id_ba;
       if (personalData.nombres !== undefined) updateData.nombres = personalData.nombres;
       if (personalData.apellidos !== undefined) updateData.apellidos = personalData.apellidos;
       if (personalData.direccion !== undefined) updateData.direccion = personalData.direccion;

@@ -115,9 +115,44 @@ export default function PersonalPage() {
     setSelectedPersonal(null);
   };
 
-  const handleEdit = (p: Personal) => {
-    setSelectedPersonal(p);
-    setOpenModal(true);
+  const handleEdit = async (p: Personal) => {
+    try {
+      // Cargar los datos completos del personal desde el endpoint específico
+      const response = await fetch(`/api/orchestrator?resource=personal&ci=${p.ci}`);
+      const result = await response.json();
+      
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Error al cargar datos del personal');
+      }
+      
+      const data = result.data;
+      
+      // Convertir el objeto plano a una instancia de Personal
+      const personalData = new Personal(
+        data.cl,
+        data.ci,
+        data.id_a,
+        data.id_t,
+        data.id_b || 0,
+        data.id_ba || 0,
+        data.nombres,
+        data.apellidos,
+        data.direccion,
+        data.telefonos,
+        data.correo,
+        data.fechaNacimiento,
+        data.fechaIngreso,
+        data.fechaContrato,
+        data.salario
+      );
+      
+      setSelectedPersonal(personalData);
+      setOpenModal(true);
+    } catch (error) {
+      toast.error('Error al cargar personal', {
+        description: error instanceof Error ? error.message : 'Error desconocido',
+      });
+    }
   };
 
   const handleDelete = async (ci: string) => {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Personal } from '@/src/domain/entities/Personal';
-import { AreaLabels, TurnoLabels, BreakLabels, AlmuerzoLabels } from '@/src/domain/enums/Catalogos';
+import { Turno as TurnoEntity } from '@/src/domain/entities/Turno';
+import { AreaLabels } from '@/src/domain/enums/Catalogos';
 import {
   Table,
   TableBody,
@@ -37,6 +38,33 @@ export function PersonalTable({ personal, isLoading, onSelectPersonal, onEdit, o
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; personal?: Personal }>({
     open: false,
   });
+  const [turnos, setTurnos] = useState<TurnoEntity[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoadingData(true);
+        const turnosRes = await fetch('/api/orchestrator?resource=turnos');
+        
+        if (turnosRes.ok) {
+          const turnosData = await turnosRes.json();
+          setTurnos(turnosData.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const getTurnoNombre = (idT: number) => {
+    const turno = turnos.find(t => t.id === idT);
+    return turno ? turno.nombre : `ID: ${idT}`;
+  };
 
   const confirmDelete = async () => {
     if (deleteDialog.personal && onDelete) {
@@ -74,8 +102,6 @@ export function PersonalTable({ personal, isLoading, onSelectPersonal, onEdit, o
               <TableHead>CI</TableHead>
               <TableHead>Área</TableHead>
               <TableHead>Turno</TableHead>
-              <TableHead>Break</TableHead>
-              <TableHead>Almuerzo</TableHead>
               <TableHead>Nombres</TableHead>
               <TableHead>Apellidos</TableHead>
               <TableHead>Teléfono</TableHead>
@@ -93,9 +119,7 @@ export function PersonalTable({ personal, isLoading, onSelectPersonal, onEdit, o
               >
                 <TableCell className="font-medium">{p.ci}</TableCell>
                 <TableCell>{AreaLabels[p.id_a as keyof typeof AreaLabels]}</TableCell>
-                <TableCell>{TurnoLabels[p.id_t as keyof typeof TurnoLabels]}</TableCell>
-                <TableCell>{BreakLabels[p.id_b as keyof typeof BreakLabels]}</TableCell>
-                <TableCell>{AlmuerzoLabels[p.id_ba as keyof typeof AlmuerzoLabels]}</TableCell>
+                <TableCell>{loadingData ? 'Cargando...' : getTurnoNombre(p.id_t)}</TableCell>
                 <TableCell>{p.nombres}</TableCell>
                 <TableCell>{p.apellidos}</TableCell>
                 <TableCell>{p.telefonos}</TableCell>

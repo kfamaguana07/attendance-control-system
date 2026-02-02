@@ -34,24 +34,30 @@ export const API_CONFIG = {
   },
 
   /**
-   * API de Turnos (Pendiente de implementar)
-   * Puerto: TBD
+   * API de Turnos
+   * Puerto: 5003
+   * Endpoints: /api/turnos/insert, /api/turnos/read_all, /api/turnos/read_by_name, /api/turnos/update
    */
   TURNOS: {
     BASE_URL: process.env.NEXT_PUBLIC_API_TURNOS_URL,
     ENDPOINTS: {
-      // TODO: Definir endpoints cuando se implemente la API
+      INSERT: '/turnos/insert',
+      READ_ALL: '/turnos/read_all',
+      READ_BY_NAME: (nombre: string) => `/turnos/read_by_name/${nombre}`,
+      UPDATE: (id: number) => `/turnos/update/${id}`,
     },
   },
 
   /**
-   * API de Recesos (Pendiente de implementar)
-   * Puerto: TBD
+   * API de Recesos
+   * Puerto: 5002
+   * Endpoints: /recesos, /recesos/{receso_id}
    */
   RECESOS: {
     BASE_URL: process.env.NEXT_PUBLIC_API_RECESOS_URL,
     ENDPOINTS: {
-      // TODO: Definir endpoints cuando se implemente la API
+      RECESOS: '/recesos',
+      RECESO_BY_ID: (id: number) => `/recesos/${id}`,
     },
   },
 

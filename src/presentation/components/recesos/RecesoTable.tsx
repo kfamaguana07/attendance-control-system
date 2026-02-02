@@ -46,12 +46,7 @@ export function RecesoTable({ recesos, onEdit, onDelete, onSearch }: RecesoTable
 
   const confirmDelete = async () => {
     if (deleteDialog.receso) {
-      try {
-        await onDelete(deleteDialog.receso.id);
-        toast.success('Receso eliminado exitosamente');
-      } catch (error) {
-        toast.error('Error al eliminar el receso');
-      }
+      await onDelete(deleteDialog.receso.id);
     }
     setDeleteDialog({ open: false });
   };

@@ -5,12 +5,6 @@ import { Turno } from '@/src/domain/entities/Turno';
 import { TurnoForm } from '@/src/presentation/components/turnos/TurnoForm';
 import { TurnoTable } from '@/src/presentation/components/turnos/TurnoTable';
 import { Button } from '@/src/presentation/components/ui/button';
-import { MockTurnoRepository } from '@/src/infrastructure/repositories/MockTurnoRepository';
-import { GetAllTurnosUseCase } from '@/src/application/use-cases/GetAllTurnosUseCase';
-import { CreateTurnoUseCase } from '@/src/application/use-cases/CreateTurnoUseCase';
-import { UpdateTurnoUseCase } from '@/src/application/use-cases/UpdateTurnoUseCase';
-import { DeleteTurnoUseCase } from '@/src/application/use-cases/DeleteTurnoUseCase';
-import { SearchTurnosUseCase } from '@/src/application/use-cases/SearchTurnosUseCase';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,14 +14,6 @@ export default function TurnosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
 
-  // Repositorio y casos de uso
-  const turnoRepository = new MockTurnoRepository();
-  const getAllTurnosUseCase = new GetAllTurnosUseCase(turnoRepository);
-  const createTurnoUseCase = new CreateTurnoUseCase(turnoRepository);
-  const updateTurnoUseCase = new UpdateTurnoUseCase(turnoRepository);
-  const deleteTurnoUseCase = new DeleteTurnoUseCase(turnoRepository);
-  const searchTurnosUseCase = new SearchTurnosUseCase(turnoRepository);
-
   useEffect(() => {
     loadTurnos();
   }, []);
@@ -35,10 +21,29 @@ export default function TurnosPage() {
   const loadTurnos = async () => {
     try {
       setIsLoading(true);
-      const data = await getAllTurnosUseCase.execute();
-      setTurnos(data);
+      const response = await fetch('/api/orchestrator?resource=turnos');
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Error al cargar turnos');
+      }
+      
+      // Convertir los datos al formato de Turno entity
+      const turnosData = result.data.map((t: any) => new Turno(
+        t.id,
+        t.horaInicio,
+        t.horaFin,
+        t.horaTotal,
+        t.nombre,
+        t.descripcion,
+        t.tipo
+      ));
+      
+      setTurnos(turnosData);
     } catch (error) {
-      toast.error('Error al cargar los turnos');
+      toast.error('Error al cargar los turnos', {
+        description: error instanceof Error ? error.message : 'Error desconocido',
+      });
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -48,32 +53,63 @@ export default function TurnosPage() {
   const handleSubmit = async (data: any) => {
     try {
       if (selectedTurno) {
-        // Actualizar
-        await updateTurnoUseCase.execute(selectedTurno.id, {
-          horaInicio: data.horaInicio,
-          horaFin: data.horaFin,
-          horaTotal: data.horaTotal,
-          nombre: data.nombre,
-          descripcion: data.descripcion,
-          tipo: data.tipo,
+        // Actualizar turno existente
+        const response = await fetch('/api/orchestrator', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource: 'turnos',
+            id: selectedTurno.id,
+            data: {
+              horaInicio: data.horaInicio,
+              horaFin: data.horaFin,
+              horaTotal: data.horaTotal,
+              nombre: data.nombre,
+              descripcion: data.descripcion,
+              tipo: data.tipo,
+            },
+          }),
         });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Error al actualizar turno');
+        }
+        
         toast.success('Turno actualizado exitosamente');
       } else {
-        // Crear
-        await createTurnoUseCase.execute({
-          horaInicio: data.horaInicio,
-          horaFin: data.horaFin,
-          horaTotal: data.horaTotal,
-          nombre: data.nombre,
-          descripcion: data.descripcion,
-          tipo: data.tipo,
-        } as Omit<Turno, 'id'>);
+        // Crear nuevo turno
+        const response = await fetch('/api/orchestrator', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            resource: 'turnos',
+            data: {
+              horaInicio: data.horaInicio,
+              horaFin: data.horaFin,
+              horaTotal: data.horaTotal,
+              nombre: data.nombre,
+              descripcion: data.descripcion,
+              tipo: data.tipo,
+            },
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Error al crear turno');
+        }
+        
         toast.success('Turno creado exitosamente');
       }
       await loadTurnos();
       setSelectedTurno(null);
     } catch (error) {
-      toast.error('Error al guardar el turno');
+      toast.error('Error al guardar el turno', {
+        description: error instanceof Error ? error.message : 'Error desconocido',
+      });
       throw error;
     }
   };
@@ -96,20 +132,41 @@ export default function TurnosPage() {
   };
 
   const handleDelete = async (id: number) => {
-    try {
-      await deleteTurnoUseCase.execute(id);
-      await loadTurnos();
-    } catch (error) {
-      throw error;
-    }
+    toast.warning('Funcionalidad no disponible', {
+      description: 'La API de Turnos no soporta eliminación. Esta funcionalidad está pendiente de desarrollo.',
+      duration: 5000,
+    });
   };
 
   const handleSearch = async (query: string) => {
     try {
-      const results = await searchTurnosUseCase.execute(query);
-      setTurnos(results);
+      if (!query.trim()) {
+        loadTurnos();
+        return;
+      }
+      
+      const response = await fetch(`/api/orchestrator?resource=turnos&query=${encodeURIComponent(query)}`);
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Error en la búsqueda');
+      }
+      
+      const turnosData = result.data.map((t: any) => new Turno(
+        t.id,
+        t.horaInicio,
+        t.horaFin,
+        t.horaTotal,
+        t.nombre,
+        t.descripcion,
+        t.tipo
+      ));
+      
+      setTurnos(turnosData);
     } catch (error) {
-      toast.error('Error al buscar turnos');
+      toast.error('Error al buscar turnos', {
+        description: error instanceof Error ? error.message : 'Error desconocido',
+      });
     }
   };
 

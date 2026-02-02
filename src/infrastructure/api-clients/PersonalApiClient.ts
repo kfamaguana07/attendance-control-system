@@ -9,6 +9,8 @@ export interface PersonalApiResponse {
   ci: string;
   id_a: number;
   id_t: number;
+  id_b: number | null;
+  id_ba: number | null;
   nombres: string;
   apellidos: string;
   direccion: string;
@@ -49,6 +51,8 @@ export interface CreatePersonalRequest {
 export interface UpdatePersonalRequest {
   id_a?: number;
   id_t?: number;
+  id_b?: number | null;
+  id_ba?: number | null;
   nombres?: string;
   apellidos?: string;
   direccion?: string;
@@ -94,9 +98,10 @@ export class PersonalApiClient extends BaseApiClient {
    * Obtiene un empleado por su cédula
    */
   async getPersonalByCi(ci: string): Promise<PersonalApiResponse> {
-    return this.get<PersonalApiResponse>(
+    const response = await this.get<PersonalSingleResponse>(
       API_CONFIG.PERSONAL.ENDPOINTS.PERSONAL_BY_CI(ci)
     );
+    return response.data;
   }
 
   /**

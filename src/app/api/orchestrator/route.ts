@@ -8,6 +8,14 @@ import { MockPersonalRepository } from '@/src/infrastructure/repositories/MockPe
 import { GetAllPersonalUseCase } from '@/src/application/use-cases/GetAllPersonalUseCase';
 import { CreatePersonalUseCase } from '@/src/application/use-cases/CreatePersonalUseCase';
 import { UpdatePersonalUseCase } from '@/src/application/use-cases/UpdatePersonalUseCase';
+import { ApiRecesoRepository } from '@/src/infrastructure/repositories/ApiRecesoRepository';
+import { MockRecesoRepository } from '@/src/infrastructure/repositories/MockRecesoRepository';
+import { GetAllRecesosUseCase } from '@/src/application/use-cases/GetAllRecesosUseCase';
+import { SearchRecesosUseCase } from '@/src/application/use-cases/SearchRecesosUseCase';
+import { ApiTurnoRepository } from '@/src/infrastructure/repositories/ApiTurnoRepository';
+import { MockTurnoRepository } from '@/src/infrastructure/repositories/MockTurnoRepository';
+import { GetAllTurnosUseCase } from '@/src/application/use-cases/GetAllTurnosUseCase';
+import { SearchTurnosUseCase } from '@/src/application/use-cases/SearchTurnosUseCase';
 
 /**
  * API Orchestrator - Orquestación de llamadas a APIs externas
@@ -23,6 +31,8 @@ import { UpdatePersonalUseCase } from '@/src/application/use-cases/UpdatePersona
 // Control de uso de APIs reales vs Mock
 const USE_REAL_API_PAUSAS = process.env.USE_REAL_API_PAUSAS === 'true';
 const USE_REAL_API_PERSONAL = process.env.USE_REAL_API_PERSONAL === 'true';
+const USE_REAL_API_RECESOS = process.env.USE_REAL_API_RECESOS === 'true';
+const USE_REAL_API_TURNOS = process.env.USE_REAL_API_TURNOS === 'true';
 
 // Instancias de repositorios
 const pausaRepository = USE_REAL_API_PAUSAS
@@ -32,6 +42,14 @@ const pausaRepository = USE_REAL_API_PAUSAS
 const personalRepository = USE_REAL_API_PERSONAL
   ? new ApiPersonalRepository()
   : new MockPersonalRepository();
+
+const recesoRepository = USE_REAL_API_RECESOS
+  ? new ApiRecesoRepository()
+  : new MockRecesoRepository();
+
+const turnoRepository = USE_REAL_API_TURNOS
+  ? new ApiTurnoRepository()
+  : new MockTurnoRepository();
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -107,6 +125,82 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      case 'turnos': {
+        const id = searchParams.get('id');
+        
+        if (id) {
+          // Obtener un turno específico por ID
+          const turno = await turnoRepository.getById(Number(id));
+          if (!turno) {
+            return NextResponse.json(
+              { success: false, error: 'Turno no encontrado' },
+              { status: 404 }
+            );
+          }
+          return NextResponse.json({
+            success: true,
+            data: turno,
+            source: USE_REAL_API_TURNOS ? 'API Real (Puerto 5003)' : 'Mock Data',
+          });
+        } else if (query) {
+          // Búsqueda de turnos
+          const searchUseCase = new SearchTurnosUseCase(turnoRepository);
+          const turnos = await searchUseCase.execute(query);
+          return NextResponse.json({
+            success: true,
+            data: turnos,
+            source: USE_REAL_API_TURNOS ? 'API Real (Puerto 5003)' : 'Mock Data',
+          });
+        } else {
+          // Obtener todos los turnos
+          const getAllUseCase = new GetAllTurnosUseCase(turnoRepository);
+          const turnos = await getAllUseCase.execute();
+          return NextResponse.json({
+            success: true,
+            data: turnos,
+            source: USE_REAL_API_TURNOS ? 'API Real (Puerto 5003)' : 'Mock Data',
+          });
+        }
+      }
+
+      case 'recesos': {
+        const id = searchParams.get('id');
+        
+        if (id) {
+          // Obtener un receso específico por ID
+          const receso = await recesoRepository.getById(Number(id));
+          if (!receso) {
+            return NextResponse.json(
+              { success: false, error: 'Receso no encontrado' },
+              { status: 404 }
+            );
+          }
+          return NextResponse.json({
+            success: true,
+            data: receso,
+            source: USE_REAL_API_RECESOS ? 'API Real (Puerto 5002)' : 'Mock Data',
+          });
+        } else if (query) {
+          // Búsqueda de recesos
+          const searchUseCase = new SearchRecesosUseCase(recesoRepository);
+          const recesos = await searchUseCase.execute(query);
+          return NextResponse.json({
+            success: true,
+            data: recesos,
+            source: USE_REAL_API_RECESOS ? 'API Real (Puerto 5002)' : 'Mock Data',
+          });
+        } else {
+          // Obtener todos los recesos
+          const getAllUseCase = new GetAllRecesosUseCase(recesoRepository);
+          const recesos = await getAllUseCase.execute();
+          return NextResponse.json({
+            success: true,
+            data: recesos,
+            source: USE_REAL_API_RECESOS ? 'API Real (Puerto 5002)' : 'Mock Data',
+          });
+        }
+      }
+
       case 'attendance':
         return NextResponse.json({
           success: true,
@@ -159,6 +253,28 @@ export async function POST(request: NextRequest) {
           data: personal,
           message: 'Personal creado exitosamente',
           source: USE_REAL_API_PERSONAL ? 'API Real (Puerto 5001)' : 'Mock Data',
+        });
+      }
+
+      case 'turnos': {
+        // Crear turno usando el repositorio configurado
+        const turno = await turnoRepository.create(data);
+        return NextResponse.json({
+          success: true,
+          data: turno,
+          message: 'Turno creado exitosamente',
+          source: USE_REAL_API_TURNOS ? 'API Real (Puerto 5003)' : 'Mock Data',
+        });
+      }
+
+      case 'recesos': {
+        // Crear receso usando el repositorio configurado
+        const receso = await recesoRepository.create(data);
+        return NextResponse.json({
+          success: true,
+          data: receso,
+          message: 'Receso creado exitosamente',
+          source: USE_REAL_API_RECESOS ? 'API Real (Puerto 5002)' : 'Mock Data',
         });
       }
 
@@ -227,6 +343,28 @@ export async function PUT(request: NextRequest) {
         });
       }
 
+      case 'turnos': {
+        // Actualizar turno usando el repositorio configurado
+        const turno = await turnoRepository.update(Number(id), data);
+        return NextResponse.json({
+          success: true,
+          data: turno,
+          message: 'Turno actualizado exitosamente',
+          source: USE_REAL_API_TURNOS ? 'API Real (Puerto 5003)' : 'Mock Data',
+        });
+      }
+
+      case 'recesos': {
+        // Actualizar receso usando el repositorio configurado
+        const receso = await recesoRepository.update(Number(id), data);
+        return NextResponse.json({
+          success: true,
+          data: receso,
+          message: 'Receso actualizado exitosamente',
+          source: USE_REAL_API_RECESOS ? 'API Real (Puerto 5002)' : 'Mock Data',
+        });
+      }
+
       default:
         return NextResponse.json(
           { success: false, error: 'Recurso no encontrado' },
@@ -277,6 +415,28 @@ export async function DELETE(request: NextRequest) {
           message: 'Personal eliminado exitosamente',
           source: USE_REAL_API_PERSONAL ? 'API Real (Puerto 5001)' : 'Mock Data',
         });
+      }
+
+      case 'turnos': {
+        // Eliminar turno - NO SOPORTADO por la API
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'La API de Turnos no soporta eliminación. Funcionalidad pendiente de desarrollo.',
+          },
+          { status: 501 }
+        );
+      }
+
+      case 'recesos': {
+        // Eliminar receso - NO SOPORTADO por la API
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'La API de Recesos no soporta eliminación. Funcionalidad pendiente de desarrollo.',
+          },
+          { status: 501 }
+        );
       }
 
       default:

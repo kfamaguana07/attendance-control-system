@@ -18,6 +18,8 @@ import {
 import { personalSchema } from '@/src/presentation/validators/personalSchema';
 import { Personal } from '@/src/domain/entities/Personal';
 import { Area } from '@/src/domain/entities/Area';
+import { Turno as TurnoEntity } from '@/src/domain/entities/Turno';
+import { Receso } from '@/src/domain/entities/Receso';
 import { 
   Turno, 
   Break, 
@@ -36,17 +38,81 @@ interface PersonalFormProps {
 
 export function PersonalFormComplete({ selectedPersonal, onSuccess, onCancel, areas }: PersonalFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [area, setArea] = useState<string>(selectedPersonal?.id_a.toString() || '1');
-  const [turno, setTurno] = useState<string>(selectedPersonal?.id_t.toString() || '1');
-  const [breakOption, setBreakOption] = useState<string>(selectedPersonal?.id_b.toString() || '1');
-  const [almuerzo, setAlmuerzo] = useState<string>(selectedPersonal?.id_ba.toString() || '1');
+  const [area, setArea] = useState<string>('1');
+  const [turno, setTurno] = useState<string>('1');
+  const [breakOption, setBreakOption] = useState<string>('1');
+  const [almuerzo, setAlmuerzo] = useState<string>('1');
+  
+  // Estados para datos de las APIs
+  const [turnos, setTurnos] = useState<TurnoEntity[]>([]);
+  const [recesosBreak, setRecesosBreak] = useState<Receso[]>([]);
+  const [recesosAlmuerzo, setRecesosAlmuerzo] = useState<Receso[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
+  // Cargar datos de las APIs
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoadingData(true);
+        
+        // Cargar turnos
+        const turnosResponse = await fetch('/api/orchestrator?resource=turnos');
+        const turnosResult = await turnosResponse.json();
+        if (turnosResult.success) {
+          const turnosData = turnosResult.data.map((t: any) => new TurnoEntity(
+            t.id,
+            t.horaInicio,
+            t.horaFin,
+            t.horaTotal,
+            t.nombre,
+            t.descripcion,
+            t.tipo
+          ));
+          setTurnos(turnosData);
+        }
+        
+        // Cargar recesos
+        const recesosResponse = await fetch('/api/orchestrator?resource=recesos');
+        const recesosResult = await recesosResponse.json();
+        if (recesosResult.success) {
+          const recesosData = recesosResult.data.map((r: any) => new Receso(
+            r.id,
+            r.id_t,
+            r.hora_inicio,
+            r.hora_fin,
+            r.hora_total,
+            r.nombre,
+            r.descripcion,
+            r.tipo
+          ));
+          
+          // Separar por tipo
+          setRecesosBreak(recesosData.filter((r: Receso) => r.tipo === 'BREAK'));
+          setRecesosAlmuerzo(recesosData.filter((r: Receso) => r.tipo === 'ALMUERZO'));
+        }
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        toast.error('Error al cargar datos de turnos y recesos');
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
+  // Actualizar estados cuando selectedPersonal cambie
   useEffect(() => {
     if (selectedPersonal) {
-      setArea(selectedPersonal.id_a.toString());
-      setTurno(selectedPersonal.id_t.toString());
-      setBreakOption(selectedPersonal.id_b.toString());
-      setAlmuerzo(selectedPersonal.id_ba.toString());
+      setArea(selectedPersonal.id_a?.toString() || '1');
+      setTurno(selectedPersonal.id_t?.toString() || '1');
+      setBreakOption(selectedPersonal.id_b?.toString() || '1');
+      setAlmuerzo(selectedPersonal.id_ba?.toString() || '1');
+    } else {
+      setArea('1');
+      setTurno('1');
+      setBreakOption('1');
+      setAlmuerzo('1');
     }
   }, [selectedPersonal]);
 
@@ -163,7 +229,12 @@ export function PersonalFormComplete({ selectedPersonal, onSuccess, onCancel, ar
   });
 
   return (
-    <form id={form.id} onSubmit={form.onSubmit} noValidate className="space-y-6">
+    <form 
+      id={form.id} 
+      onSubmit={form.onSubmit} 
+      noValidate 
+      className="space-y-6"
+    >
       {/* Datos Personales */}
       <div className="border rounded-lg p-4">
         <h3 className="text-lg font-semibold mb-4">Datos Personales</h3>
@@ -330,7 +401,11 @@ export function PersonalFormComplete({ selectedPersonal, onSuccess, onCancel, ar
 
           <div className="space-y-2">
             <Label>Área *</Label>
-            <Select value={area} onValueChange={setArea} disabled={isLoading}>
+            <Select 
+              value={selectedPersonal ? selectedPersonal.id_a?.toString() : area} 
+              onValueChange={setArea} 
+              disabled={isLoading}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccione área" />
               </SelectTrigger>
@@ -346,14 +421,18 @@ export function PersonalFormComplete({ selectedPersonal, onSuccess, onCancel, ar
 
           <div className="space-y-2">
             <Label>Turno *</Label>
-            <Select value={turno} onValueChange={setTurno} disabled={isLoading}>
+            <Select 
+              value={selectedPersonal ? selectedPersonal.id_t?.toString() : turno} 
+              onValueChange={setTurno} 
+              disabled={isLoading || loadingData}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccione turno" />
+                <SelectValue placeholder={loadingData ? "Cargando..." : "Seleccione turno"} />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(TurnoLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
+                {turnos.map((turnoItem) => (
+                  <SelectItem key={turnoItem.id} value={turnoItem.id.toString()}>
+                    {turnoItem.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -362,14 +441,18 @@ export function PersonalFormComplete({ selectedPersonal, onSuccess, onCancel, ar
 
           <div className="space-y-2">
             <Label>Break *</Label>
-            <Select value={breakOption} onValueChange={setBreakOption} disabled={isLoading}>
+            <Select 
+              value={selectedPersonal ? selectedPersonal.id_b?.toString() : breakOption} 
+              onValueChange={setBreakOption} 
+              disabled={isLoading || loadingData}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccione break" />
+                <SelectValue placeholder={loadingData ? "Cargando..." : "Seleccione break"} />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(BreakLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
+                {recesosBreak.map((receso) => (
+                  <SelectItem key={receso.id} value={receso.id.toString()}>
+                    {receso.nombre} ({receso.hora_inicio} - {receso.hora_fin})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -378,14 +461,18 @@ export function PersonalFormComplete({ selectedPersonal, onSuccess, onCancel, ar
 
           <div className="space-y-2">
             <Label>Almuerzo *</Label>
-            <Select value={almuerzo} onValueChange={setAlmuerzo} disabled={isLoading}>
+            <Select 
+              value={selectedPersonal ? selectedPersonal.id_ba?.toString() : almuerzo} 
+              onValueChange={setAlmuerzo} 
+              disabled={isLoading || loadingData}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccione almuerzo" />
+                <SelectValue placeholder={loadingData ? "Cargando..." : "Seleccione almuerzo"} />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(AlmuerzoLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
+                {recesosAlmuerzo.map((receso) => (
+                  <SelectItem key={receso.id} value={receso.id.toString()}>
+                    {receso.nombre} ({receso.hora_inicio} - {receso.hora_fin})
                   </SelectItem>
                 ))}
               </SelectContent>
