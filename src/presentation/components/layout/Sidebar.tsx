@@ -1,13 +1,14 @@
 'use client';
 
-import { Users, Home, LogOut, Clock, Coffee, PauseCircle, FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, Home, LogOut, Clock, Coffee, PauseCircle, FileText, ChevronDown, ChevronRight, User } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/src/infrastructure/utils/utils';
 import { Separator } from '@/src/presentation/components/ui/separator';
 import { Button } from '@/src/presentation/components/ui/button';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { useAuth } from '@/src/presentation/hooks/useAuth';
 
 interface SidebarProps {
   className?: string;
@@ -54,12 +55,12 @@ const reportesItems = [
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
+  const { user, logout: handleLogout } = useAuth();
   const [isReportesOpen, setIsReportesOpen] = useState(pathname.startsWith('/dashboard/reportes'));
 
-  const handleLogout = () => {
+  const onLogout = () => {
+    handleLogout();
     toast.success('Sesión cerrada exitosamente');
-    router.push('/');
   };
 
   return (
@@ -144,11 +145,26 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
       </div>
       
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
+      <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white space-y-3">
+        {user && (
+          <div className="px-3 py-2 bg-slate-50 rounded-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center">
+                <User className="h-4 w-4 text-slate-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 truncate">
+                  {user.nombres} {user.apellidos}
+                </p>
+                <p className="text-xs text-slate-500 truncate">CI: {user.ci}</p>
+              </div>
+            </div>
+          </div>
+        )}
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-          onClick={handleLogout}
+          onClick={onLogout}
         >
           <LogOut className="h-4 w-4" />
           Cerrar Sesión

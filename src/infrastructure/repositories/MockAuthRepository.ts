@@ -4,12 +4,12 @@ import { User } from '@/src/domain/entities/User';
 export class MockAuthRepository implements IAuthRepository {
   private currentUser: User | null = null;
 
-  async login(username: string, password: string): Promise<User> {
+  async login(ci: string, clave: string): Promise<User> {
     // Simulación de validación
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    if (username === 'admin' && password === 'admin') {
-      this.currentUser = new User('1', username, 'admin@example.com', 'admin');
+    if (ci === '1721009692' && clave === 'admin') {
+      this.currentUser = new User('1', ci, 'admin@example.com', 'admin');
       return this.currentUser;
     }
     

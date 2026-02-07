@@ -16,11 +16,7 @@ import {
   SheetTitle,
 } from "@/src/presentation/components/ui/sheet";
 import { loginSchema } from "@/src/presentation/validators/loginSchema";
-import { MockAuthRepository } from "@/src/infrastructure/repositories/MockAuthRepository";
-import { LoginUseCase } from "@/src/application/use-cases/LoginUseCase";
-
-const authRepository = new MockAuthRepository();
-const loginUseCase = new LoginUseCase(authRepository);
+import { login } from "@/src/infrastructure/utils/auth-client";
 
 interface LoginSheetProps {
   open: boolean;
@@ -50,13 +46,13 @@ export function LoginSheet({ open, onOpenChange }: LoginSheetProps) {
       setIsLoading(true);
 
       try {
-        const user = await loginUseCase.execute(
-          submission.value.username,
-          submission.value.password
-        );
+        const result = await login({
+          ci: submission.value.ci,
+          clave: submission.value.clave,
+        });
 
         toast.success("Inicio de sesión exitoso", {
-          description: `Bienvenido ${user.username}`,
+          description: `Bienvenido ${result.user.nombres} ${result.user.apellidos}`,
         });
 
         onOpenChange(false);
@@ -66,7 +62,7 @@ export function LoginSheet({ open, onOpenChange }: LoginSheetProps) {
           description:
             error instanceof Error
               ? error.message
-              : "Usuario o contraseña incorrectos",
+              : "CI o contraseña incorrectos",
         });
       } finally {
         setIsLoading(false);
@@ -86,35 +82,35 @@ export function LoginSheet({ open, onOpenChange }: LoginSheetProps) {
 
         <form id={form.id} onSubmit={form.onSubmit} noValidate className="space-y-4 mt-6">
           <div className="space-y-2">
-            <Label htmlFor={fields.username.id}>Usuario</Label>
+            <Label htmlFor={fields.ci.id}>Cédula de Identidad</Label>
             <Input
-              key={fields.username.key}
-              id={fields.username.id}
-              name={fields.username.name}
-              defaultValue={fields.username.initialValue}
-              placeholder="Ingresa tu usuario"
+              key={fields.ci.key}
+              id={fields.ci.id}
+              name={fields.ci.name}
+              defaultValue={fields.ci.initialValue}
+              placeholder="Ingresa tu cédula"
               autoComplete="username"
               disabled={isLoading}
             />
-            {fields.username.errors && (
-              <p className="text-sm text-red-500">{fields.username.errors}</p>
+            {fields.ci.errors && (
+              <p className="text-sm text-red-500">{fields.ci.errors}</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={fields.password.id}>Contraseña</Label>
+            <Label htmlFor={fields.clave.id}>Contraseña</Label>
             <Input
-              key={fields.password.key}
-              id={fields.password.id}
-              name={fields.password.name}
+              key={fields.clave.key}
+              id={fields.clave.id}
+              name={fields.clave.name}
               type="password"
-              defaultValue={fields.password.initialValue}
+              defaultValue={fields.clave.initialValue}
               placeholder="Ingresa tu contraseña"
               autoComplete="current-password"
               disabled={isLoading}
             />
-            {fields.password.errors && (
-              <p className="text-sm text-red-500">{fields.password.errors}</p>
+            {fields.clave.errors && (
+              <p className="text-sm text-red-500">{fields.clave.errors}</p>
             )}
           </div>
 

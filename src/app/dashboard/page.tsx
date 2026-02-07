@@ -1,10 +1,18 @@
+'use client';
+
+import { useAuth } from '@/src/presentation/hooks/useAuth';
+
 export default function DashboardPage() {
+  const { user } = useAuth();
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-2">
-          Bienvenido al sistema de control de asistencias
+          {user 
+            ? `Bienvenido, ${user.nombres} ${user.apellidos}` 
+            : 'Bienvenido al sistema de control de asistencias'}
         </p>
       </div>
 

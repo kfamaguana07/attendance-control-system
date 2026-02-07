@@ -86,12 +86,28 @@ services:
     depends_on:
       - db
 
-  api-pausas:
-    image: alexdaniel593/attendance_control_system:pausas
-    container_name: api-pausas
+  api-login:
+    image: alexdaniel593/attendance_control_system:login
+    container_name: api-login
     restart: unless-stopped
     ports:
-      - "5005:8000"
+      - "5005:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    networks:
+      - api-net
+    depends_on:
+      - db
+
+  api-firmas:
+    image: alexdaniel593/attendance_control_system:firmas
+    container_name: api-firmas
+    restart: unless-stopped
+    ports:
+      - "5006:5000"
     deploy:
       resources:
         limits:

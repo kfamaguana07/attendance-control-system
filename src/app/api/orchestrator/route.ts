@@ -279,13 +279,14 @@ export async function POST(request: NextRequest) {
       }
 
       case 'login':
-        // Simular autenticación
-        if (data.username === 'admin' && data.password === 'admin') {
+        // NOTA: Este endpoint está deprecado. Usar /api/auth/login en su lugar
+        // Simular autenticación para compatibilidad
+        if (data.ci === '1721009692' && data.clave === 'admin') {
           return NextResponse.json({
             success: true,
             data: {
               id: '1',
-              username: data.username,
+              ci: data.ci,
               email: 'admin@example.com',
               role: 'admin',
             },

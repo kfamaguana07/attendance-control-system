@@ -1,15 +1,18 @@
 export interface LoginDTO {
-  username: string;
-  password: string;
+  ci: string;
+  clave: string;
 }
 
 export interface LoginResponseDTO {
-  user: {
-    id: string;
-    username: string;
-    email?: string;
-    role?: string;
-  };
   success: boolean;
+  token: string;
+  user: {
+    ci: string;
+    nombres: string;
+    apellidos: string;
+    correo: string;
+    nombreCompleto?: string;
+  };
+  role?: string;
   message?: string;
 }

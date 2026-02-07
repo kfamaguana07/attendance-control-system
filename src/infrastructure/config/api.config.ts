@@ -71,6 +71,18 @@ export const API_CONFIG = {
       // TODO: Definir endpoints cuando se implemente la API
     },
   },
+
+  /**
+   * API de Autenticación (Login)
+   * Puerto: 5005
+   * Endpoints: /auth/login
+   */
+  AUTH: {
+    BASE_URL: process.env.NEXT_PUBLIC_API_AUTH_URL,
+    ENDPOINTS: {
+      LOGIN: '/auth/login',
+    },
+  },
 };
 
 export default API_CONFIG;
