@@ -31,13 +31,14 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/src/infrastructure/utils/utils";
 import { toast } from "sonner";
-import { MockPersonalRepository } from "@/src/infrastructure/repositories/MockPersonalRepository";
-import { MockFirmaRepository } from "@/src/infrastructure/repositories/MockFirmaRepository";
+import { ApiPersonalRepository } from "@/src/infrastructure/repositories/ApiPersonalRepository";
+import { ApiFirmaRepository } from "@/src/infrastructure/repositories/ApiFirmaRepository";
 import { GetAllPersonalUseCase } from "@/src/application/use-cases/GetAllPersonalUseCase";
 import { Separator } from "@/src/presentation/components/ui/separator";
+import { FirmaApiResponse } from "@/src/infrastructure/api-clients/FirmasApiClient";
 
-const personalRepository = new MockPersonalRepository();
-const firmaRepository = new MockFirmaRepository();
+const personalRepository = new ApiPersonalRepository();
+const firmaRepository = new ApiFirmaRepository();
 const getAllPersonalUseCase = new GetAllPersonalUseCase(personalRepository);
 
 interface ReporteData {
@@ -83,35 +84,86 @@ export default function JornadaTotalPage() {
   };
 
   const handleConsultar = async () => {
-    if (!fechaInicio || !fechaFin) {
-      toast.error("Debes seleccionar ambas fechas");
-      return;
-    }
-
     setIsLoading(true);
     try {
-      // Simulación de datos - aquí conectarías con tu repositorio real
-      const mockData: ReporteData[] = [
-        {
-          ci: "1234567890",
-          fechaFirma: "2026-01-20",
-          nombres: "Juan",
-          apellidos: "Pérez",
-          ingresoJornada: "08:05:00",
-          salidaJornada: "17:00:00",
-          inicioBreak: "10:00:00",
-          regresoBreak: "10:15:00",
-          inicioAlmuerzo: "12:00:00",
-          regresoAlmuerzo: "13:00:00",
-          atrasoJornada: "00:05:00",
-          atrasoBreak: "00:00:00",
-          atrasoAlmuerzo: "00:00:00",
-          observaciones: "",
-        },
-      ];
+      // Obtener todas las firmas según los filtros
+      let todasLasFirmas: FirmaApiResponse[] = [];
+      
+      // Si se seleccionó un empleado específico
+      if (empleadoSeleccionado !== "todos") {
+        todasLasFirmas = await firmaRepository.getFirmasByEmpleado(empleadoSeleccionado);
+        
+        // Filtrar por fechas si están seleccionadas
+        if (fechaInicio && fechaFin) {
+          const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd');
+          const fechaFinStr = format(fechaFin, 'yyyy-MM-dd');
+          todasLasFirmas = todasLasFirmas.filter((firma: FirmaApiResponse) => {
+            const fechaFirma = firma.fecha_firma;
+            return fechaFirma >= fechaInicioStr && fechaFirma <= fechaFinStr;
+          });
+        } else if (fechaInicio) {
+          const fechaInicioStr = format(fechaInicio, 'yyyy-MM-dd');
+          todasLasFirmas = todasLasFirmas.filter((firma: FirmaApiResponse) => 
+            firma.fecha_firma >= fechaInicioStr
+          );
+        } else if (fechaFin) {
+          const fechaFinStr = format(fechaFin, 'yyyy-MM-dd');
+          todasLasFirmas = todasLasFirmas.filter((firma: FirmaApiResponse) => 
+            firma.fecha_firma <= fechaFinStr
+          );
+        }
+      } else {
+        // Si no se seleccionó empleado, obtener por fecha
+        if (fechaInicio && fechaFin) {
+          // Obtener firmas para todas las fechas en el rango
+          const fechaActual = new Date(fechaInicio);
+          const fechaFinal = new Date(fechaFin);
+          
+          while (fechaActual <= fechaFinal) {
+            const fechaStr = format(fechaActual, 'yyyy-MM-dd');
+            const firmasDia = await firmaRepository.getFirmasByFecha(fechaStr);
+            todasLasFirmas = [...todasLasFirmas, ...firmasDia];
+            fechaActual.setDate(fechaActual.getDate() + 1);
+          }
+        } else if (fechaInicio) {
+          // Solo fecha inicio, obtener esa fecha
+          const fechaStr = format(fechaInicio, 'yyyy-MM-dd');
+          todasLasFirmas = await firmaRepository.getFirmasByFecha(fechaStr);
+        } else if (fechaFin) {
+          // Solo fecha fin, obtener esa fecha
+          const fechaStr = format(fechaFin, 'yyyy-MM-dd');
+          todasLasFirmas = await firmaRepository.getFirmasByFecha(fechaStr);
+        } else {
+          // Sin fechas, obtener todas las firmas de hoy
+          todasLasFirmas = await firmaRepository.getFirmasHoy();
+        }
+      }
 
-      setDatos(mockData);
-      toast.success("Consulta realizada exitosamente");
+      // Mapear los datos a la estructura de la tabla
+      const datosFormateados: ReporteData[] = todasLasFirmas.map((firma: FirmaApiResponse) => ({
+        ci: firma.ci,
+        fechaFirma: firma.fecha_firma,
+        nombres: firma.empleado?.nombres || '',
+        apellidos: firma.empleado?.apellidos || '',
+        ingresoJornada: firma.h_i_jornada || '-',
+        salidaJornada: firma.h_f_jornada || '-',
+        inicioBreak: firma.h_i_break || '-',
+        regresoBreak: firma.h_f_break || '-',
+        inicioAlmuerzo: firma.h_i_almuerzo || '-',
+        regresoAlmuerzo: firma.h_f_almuerzo || '-',
+        atrasoJornada: firma.a_i_jornada || '00:00:00',
+        atrasoBreak: firma.a_f_break || '00:00:00',
+        atrasoAlmuerzo: firma.a_f_almuerzo || '00:00:00',
+        observaciones: firma.observacion || '',
+      }));
+
+      setDatos(datosFormateados);
+      
+      if (datosFormateados.length === 0) {
+        toast.info("No se encontraron registros para los filtros seleccionados");
+      } else {
+        toast.success(`Se encontraron ${datosFormateados.length} registros`);
+      }
     } catch (error) {
       toast.error("Error al consultar datos");
       console.error(error);
@@ -121,7 +173,68 @@ export default function JornadaTotalPage() {
   };
 
   const handleExportar = () => {
-    toast.info("Función de exportar en desarrollo");
+    if (datos.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+
+    try {
+      // Crear CSV
+      const headers = [
+        "CI",
+        "Fecha",
+        "Nombres",
+        "Apellidos",
+        "Ingreso Jornada",
+        "Salida Jornada",
+        "Inicio Break",
+        "Regreso Break",
+        "Inicio Almuerzo",
+        "Regreso Almuerzo",
+        "Atraso Jornada",
+        "Atraso Break",
+        "Atraso Almuerzo",
+        "Observaciones"
+      ];
+
+      const csvContent = [
+        headers.join(","),
+        ...datos.map(row => [
+          row.ci,
+          row.fechaFirma,
+          row.nombres,
+          row.apellidos,
+          row.ingresoJornada,
+          row.salidaJornada,
+          row.inicioBreak,
+          row.regresoBreak,
+          row.inicioAlmuerzo,
+          row.regresoAlmuerzo,
+          row.atrasoJornada,
+          row.atrasoBreak,
+          row.atrasoAlmuerzo,
+          `"${row.observaciones}"`
+        ].join(","))
+      ].join("\n");
+
+      // Descargar archivo
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `reporte_jornada_total_${format(new Date(), 'yyyy-MM-dd_HHmmss')}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Reporte exportado exitosamente");
+    } catch (error) {
+      toast.error("Error al exportar el reporte");
+      console.error(error);
+    }
   };
 
   return (

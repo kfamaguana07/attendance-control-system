@@ -1,102 +1,119 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { DatosFirma } from "@/src/presentation/components/firma/DatosFirma";
 import { Cronometro } from "@/src/presentation/components/firma/Cronometro";
 import { RegistroFirma } from "@/src/presentation/components/firma/RegistroFirma";
 import { LoginSheet } from "@/src/presentation/components/firma/LoginSheet";
-import { MockFirmaRepository } from "@/src/infrastructure/repositories/MockFirmaRepository";
-import { MockPersonalRepository } from "@/src/infrastructure/repositories/MockPersonalRepository";
-import { GetTodayFirmaUseCase } from "@/src/application/use-cases/GetTodayFirmaUseCase";
-import { RegistrarFirmaUseCase } from "@/src/application/use-cases/RegistrarFirmaUseCase";
-import { GetAllPersonalUseCase } from "@/src/application/use-cases/GetAllPersonalUseCase";
+import { FirmasApiClient } from "@/src/infrastructure/api-clients/FirmasApiClient";
 import { Firma } from "@/src/domain/entities/Firma";
 import { FirmaDTO } from "@/src/presentation/dtos/FirmaDTO";
 import { Button } from "@/src/presentation/components/ui/button";
 import { LogIn } from "lucide-react";
 
-const firmaRepository = new MockFirmaRepository();
-const personalRepository = new MockPersonalRepository();
-const getTodayFirmaUseCase = new GetTodayFirmaUseCase(firmaRepository);
-const registrarFirmaUseCase = new RegistrarFirmaUseCase(firmaRepository);
-const getAllPersonalUseCase = new GetAllPersonalUseCase(personalRepository);
+const firmasApiClient = new FirmasApiClient();
 
 export default function HomePage() {
   const [firma, setFirma] = useState<Firma | null>(null);
   const [firmaDTO, setFirmaDTO] = useState<FirmaDTO | null>(null);
   const [empleadoNombre, setEmpleadoNombre] = useState("Empleado");
-  const [empleadoCI, setEmpleadoCI] = useState("1234567890"); // CI por defecto
   const [loginOpen, setLoginOpen] = useState(false);
 
-  useEffect(() => {
-    loadFirmaData();
-  }, []);
+  const handleRegistrarFirma = async (firmaInput: string) => {
+    if (!firmaInput) {
+      toast.error('Por favor ingresa tu cédula primero');
+      return;
+    }
 
-  const loadFirmaData = async () => {
     try {
-      // Obtener firma del día
-      const firmaData = await getTodayFirmaUseCase.execute(empleadoCI);
-      setFirma(firmaData);
-
-      if (firmaData) {
-        // Convertir a DTO
+      // Procesar firma usando SOLO el endpoint /firmas/procesar
+      const today = new Date().toISOString().split('T')[0];
+      const horaActual = new Date().toLocaleTimeString('es-EC', { hour12: false });
+      
+      const response = await firmasApiClient.procesarFirma({
+        ci: firmaInput,
+        fecha_firma: today,
+        hora_actual: horaActual
+      });
+      
+      if (response.success && response.data) {
+        toast.success(response.message || 'Firma registrada correctamente');
+        
+        // Actualizar inmediatamente con los datos de la respuesta
+        const firmaData = new Firma(
+          response.data.fecha_firma,
+          response.data.h_i_jornada,
+          response.data.a_i_jornada,
+          response.data.h_i_break,
+          response.data.h_f_break,
+          response.data.a_f_break,
+          response.data.h_i_almuerzo,
+          response.data.h_f_almuerzo,
+          response.data.a_f_almuerzo,
+          response.data.h_f_jornada,
+          response.data.ci,
+          response.data.id_t,
+          response.data.id_b,
+          response.data.id_ba
+        );
+        
+        setFirma(firmaData);
+        
+        // Convertir a DTO para mostrar en los inputs
         const dto: FirmaDTO = {
-          fechaFirma: firmaData.fechaFirma,
-          hIJornada: firmaData.hIJornada,
-          aIJornada: firmaData.aIJornada,
-          hIBreak: firmaData.hIBreak,
-          hFBreak: firmaData.hFBreak,
-          aFBreak: firmaData.aFBreak,
-          hIAlmuerzo: firmaData.hIAlmuerzo,
-          hFAlmuerzo: firmaData.hFAlmuerzo,
-          aFAlmuerzo: firmaData.aFAlmuerzo,
-          hFJornada: firmaData.hFJornada,
-          ci: firmaData.ci,
-          idT: firmaData.idT,
-          idB: firmaData.idB,
-          idBa: firmaData.idBa,
+          fechaFirma: response.data.fecha_firma,
+          hIJornada: response.data.h_i_jornada,
+          aIJornada: response.data.a_i_jornada,
+          hIBreak: response.data.h_i_break,
+          hFBreak: response.data.h_f_break,
+          aFBreak: response.data.a_f_break,
+          hIAlmuerzo: response.data.h_i_almuerzo,
+          hFAlmuerzo: response.data.h_f_almuerzo,
+          aFAlmuerzo: response.data.a_f_almuerzo,
+          hFJornada: response.data.h_f_jornada,
+          ci: response.data.ci,
+          idT: response.data.id_t,
+          idB: response.data.id_b,
+          idBa: response.data.id_ba,
         };
         setFirmaDTO(dto);
-
-        // Obtener nombre del empleado
-        const personal = await getAllPersonalUseCase.execute();
-        const empleado = personal.find((p) => p.ci === empleadoCI);
-        if (empleado) {
-          setEmpleadoNombre(`${empleado.nombres} ${empleado.apellidos}`);
+        
+        // Actualizar nombre del empleado si viene en la respuesta
+        if (response.data.empleado) {
+          setEmpleadoNombre(`${response.data.empleado.nombres.trim()} ${response.data.empleado.apellidos.trim()}`);
+        }
+      } else {
+        // Mostrar el error específico que retorna la API
+        const errorMessage = (response as any).error || response.message || 'Error al registrar firma';
+        
+        // Limpiar los campos cuando hay error para que no se muestren datos antiguos
+        setFirma(null);
+        setFirmaDTO(null);
+        setEmpleadoNombre("Empleado");
+        
+        // Determinar el tipo de toast según el error
+        if (errorMessage.includes('ya ha sido completada')) {
+          toast.warning(errorMessage);
+        } else {
+          toast.error(errorMessage);
         }
       }
-    } catch (error) {
-      console.error("Error al cargar datos:", error);
-      toast.error("Error al cargar los datos de firma");
-    }
-  };
-
-  const handleRegistrarFirma = async (firmaInput: string) => {
-    try {
-      // Determinar qué tipo de firma registrar según el estado actual
-      let tipoFirma = "INICIO_JORNADA";
-
-      if (firma) {
-        if (!firma.hIJornada) {
-          tipoFirma = "INICIO_JORNADA";
-        } else if (!firma.hIBreak) {
-          tipoFirma = "SALIDA_BREAK";
-        } else if (!firma.hFBreak) {
-          tipoFirma = "REGRESO_BREAK";
-        } else if (!firma.hIAlmuerzo) {
-          tipoFirma = "SALIDA_ALMUERZO";
-        } else if (!firma.hFAlmuerzo) {
-          tipoFirma = "REGRESO_ALMUERZO";
-        } else if (!firma.hFJornada) {
-          tipoFirma = "FIN_JORNADA";
-        }
+    } catch (error: any) {
+      console.error('Error al registrar firma:', error);
+      
+      // Manejar errores específicos
+      const errorMsg = error.message || '';
+      
+      if (errorMsg.includes('ya ha sido completada')) {
+        toast.warning('Tu jornada de hoy ya está completa. No puedes registrar más eventos.');
+      } else if (errorMsg.includes('404') || errorMsg.includes('no encontrado')) {
+        toast.error('Empleado no encontrado. Verifica tu cédula.');
+      } else if (errorMsg.includes('400')) {
+        toast.error(errorMsg.replace('HTTP Error: 400 Bad Request', '').trim() || 'Error en la solicitud');
+      } else {
+        toast.error('Error al registrar la firma. Intenta nuevamente.');
       }
-
-      await registrarFirmaUseCase.execute(empleadoCI, tipoFirma);
-      await loadFirmaData(); // Recargar datos
-    } catch (error) {
-      throw error;
     }
   };
 

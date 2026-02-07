@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated } from '@/src/infrastructure/utils/auth-client';
 
@@ -15,15 +15,23 @@ interface ProtectedRouteProps {
  */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/');
-    }
+    // Verificar autenticación solo en el cliente
+    const checkAuth = () => {
+      if (!isAuthenticated()) {
+        router.push('/');
+      } else {
+        setIsChecking(false);
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
-  // Si no está autenticado, no renderizar nada mientras redirige
-  if (!isAuthenticated()) {
+  // Mostrar loader mientras verifica (solo en el cliente)
+  if (isChecking) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

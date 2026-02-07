@@ -62,13 +62,26 @@ export const API_CONFIG = {
   },
 
   /**
-   * API de Firmas (Pendiente de implementar)
-   * Puerto: TBD
+   * API de Firmas
+   * Puerto: 5001
+   * Endpoints: /firmas, /firmas/hoy, /firmas/procesar, etc.
    */
   FIRMAS: {
     BASE_URL: process.env.NEXT_PUBLIC_API_FIRMAS_URL,
     ENDPOINTS: {
-      // TODO: Definir endpoints cuando se implemente la API
+      HEALTH: '/health',
+      FIRMAS: '/firmas',
+      HOY: '/firmas/hoy',
+      BY_ID: (id: number) => `/firmas/${id}`,
+      BY_EMPLEADO: (ci: string) => `/firmas/empleado/${ci}`,
+      BY_EMPLEADO_FECHA: (ci: string, fecha: string) => `/firmas/empleado/${ci}/fecha/${fecha}`,
+      BY_FECHA: (fecha: string) => `/firmas/fecha/${fecha}`,
+      INCOMPLETAS: '/firmas/incompletas',
+      INICIAR_JORNADA: '/firmas/iniciar-jornada',
+      PROCESAR: '/firmas/procesar',
+      UPDATE: (id: number) => `/firmas/${id}`,
+      AUTOCOMPLETAR: '/firmas/autocompletar',
+      DELETE: (id: number) => `/firmas/${id}`,
     },
   },
 

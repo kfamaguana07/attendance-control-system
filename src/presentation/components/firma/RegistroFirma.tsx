@@ -38,9 +38,9 @@ export function RegistroFirma({ onRegistrarFirma }: RegistroFirmaProps) {
       try {
         await onRegistrarFirma(submission.value.firma);
         setFirma("");
-        toast.success("Firma registrada exitosamente");
+        // No mostrar toast aquí, lo maneja la función onRegistrarFirma
       } catch (error) {
-        toast.error("Error al registrar la firma");
+        // Solo mostrar error si la función lanza una excepción
         console.error(error);
       } finally {
         setIsLoading(false);

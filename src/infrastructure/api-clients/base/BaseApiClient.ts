@@ -84,13 +84,37 @@ export class BaseApiClient {
         cache: 'no-store',
       });
 
+      // Intentar parsear el response como JSON primero
+      const responseText = await response.text();
+      let responseJson;
+      
+      try {
+        responseJson = JSON.parse(responseText);
+      } catch (parseError) {
+        // Si no se puede parsear como JSON
+        if (!response.ok) {
+          console.error(`HTTP Error ${response.status}:`, responseText);
+          throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        }
+        throw new Error('Invalid JSON response');
+      }
+
+      // Si la respuesta tiene success: false, retornar el JSON completo
+      // para que la aplicación pueda manejar el campo "error"
+      if (responseJson.success === false) {
+        return responseJson;
+      }
+
+      // Si el status no es OK pero tiene JSON válido, lanzar con el mensaje
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`HTTP Error ${response.status}:`, errorText);
+        console.error(`HTTP Error ${response.status}:`, responseText);
+        if (responseJson.error || responseJson.message) {
+          throw new Error(responseJson.error || responseJson.message);
+        }
         throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
       }
 
-      return await response.json();
+      return responseJson;
     } catch (error) {
       console.error(`Error en POST ${fullUrl}:`, error);
       throw error;
