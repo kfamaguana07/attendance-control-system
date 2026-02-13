@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
     // Parsear el body
     const body: LoginDTO = await request.json();
 
+    console.log('🔐 Login attempt:', { ci: body.ci, useRealAPI: USE_REAL_API_AUTH });
+
     // Validar campos requeridos
     if (!body.ci || !body.clave) {
       return NextResponse.json(
@@ -86,13 +88,19 @@ export async function POST(request: NextRequest) {
       };
     } else {
       // Mock data para desarrollo
+      console.log('📝 Using mock authentication');
+      console.log('Expected credentials: ci=1721009692, clave=admin');
+      console.log('Received credentials: ci=' + body.ci);
+      
       if (body.ci !== '1721009692' || body.clave !== 'admin') {
+        console.log('❌ Invalid credentials');
         return NextResponse.json(
           { success: false, message: 'Credenciales inválidas' },
           { status: 401 }
         );
       }
 
+      console.log('✅ Mock authentication successful');
       userInfo = {
         ci: '1721009692',
         nombres: 'ADMIN',

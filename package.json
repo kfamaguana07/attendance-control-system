@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env TZ=America/Guayaquil next dev",
+    "dev": "cross-env TZ=America/Guayaquil next dev -p 3000",
     "build": "cross-env TZ=America/Guayaquil next build",
-    "start": "cross-env TZ=America/Guayaquil next start",
+    "start": "cross-env TZ=America/Guayaquil next start -p 3000",
     "lint": "eslint"
   },
   "dependencies": {
