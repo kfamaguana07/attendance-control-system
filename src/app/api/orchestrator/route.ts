@@ -209,6 +209,30 @@ export async function GET(request: NextRequest) {
           source: 'Mock Data',
         });
 
+      case 'chatbot-health': {
+        // Verificar estado de salud del chatbot
+        try {
+          const chatbotUrl = process.env.NEXT_PUBLIC_CHATBOT_URL || 'http://localhost:5007';
+          const response = await fetch(`${chatbotUrl}/health`);
+          const data = await response.json();
+          
+          return NextResponse.json({
+            success: true,
+            status: 'ok',
+            chatbot: data,
+          });
+        } catch (error) {
+          return NextResponse.json(
+            { 
+              success: false, 
+              status: 'error', 
+              message: 'Chatbot no disponible' 
+            },
+            { status: 503 }
+          );
+        }
+      }
+
       default:
         return NextResponse.json(
           { success: false, error: 'Recurso no encontrado' },
@@ -276,6 +300,53 @@ export async function POST(request: NextRequest) {
           message: 'Receso creado exitosamente',
           source: USE_REAL_API_RECESOS ? 'API Real (Puerto 5002)' : 'Mock Data',
         });
+      }
+
+      case 'chatbot': {
+        // Enviar mensaje al chatbot
+        const { message, session_id } = data;
+        
+        if (!message) {
+          return NextResponse.json(
+            { success: false, error: 'El mensaje es requerido' },
+            { status: 400 }
+          );
+        }
+
+        const chatbotUrl = process.env.NEXT_PUBLIC_CHATBOT_URL || 'http://localhost:5007';
+        
+        try {
+          const response = await fetch(`${chatbotUrl}/chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message,
+              session_id: session_id || `session_${Date.now()}`,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Error del chatbot: ${response.status}`);
+          }
+
+          const chatbotData = await response.json();
+          return NextResponse.json({
+            success: true,
+            data: chatbotData,
+          });
+        } catch (error) {
+          console.error('Error al comunicarse con el chatbot:', error);
+          return NextResponse.json(
+            { 
+              success: false,
+              response: 'Lo siento, no puedo procesar tu mensaje en este momento. Por favor, intenta más tarde.',
+              error: 'Error de conexión con el chatbot' 
+            },
+            { status: 500 }
+          );
+        }
       }
 
       case 'login':

@@ -7,29 +7,29 @@ export const API_CONFIG = {
   /**
    * API de Tiempos Fuera (Pausas)
    * Puerto: 5004
-   * Endpoints: /empleados, /pausas
+   * Endpoints: /api/empleados, /api/pausas
    */
   TIEMPOS_FUERA: {
     BASE_URL: process.env.NEXT_PUBLIC_API_TIEMPOS_FUERA_URL,
     ENDPOINTS: {
-      EMPLEADOS: '/empleados',
-      PAUSAS: '/pausas',
-      PAUSAS_POR_FECHA: (fecha: string) => `/pausas/fecha/${fecha}`,
-      PAUSA_BY_ID: (id: number) => `/pausas/${id}`,
+      EMPLEADOS: '/api/empleados',
+      PAUSAS: '/api/pausas',
+      PAUSAS_POR_FECHA: (fecha: string) => `/api/pausas/fecha/${fecha}`,
+      PAUSA_BY_ID: (id: number) => `/api/pausas/${id}`,
     },
   },
 
   /**
    * API de Personal
    * Puerto: 5001
-   * Endpoints: /personal, /personal/<ci>, /personal/search
+   * Endpoints: /api/personal, /api/personal/<ci>, /api/personal/search
    */
   PERSONAL: {
     BASE_URL: process.env.NEXT_PUBLIC_API_PERSONAL_URL,
     ENDPOINTS: {
-      PERSONAL: '/personal',
-      PERSONAL_BY_CI: (ci: string) => `/personal/${ci}`,
-      SEARCH: '/personal/search',
+      PERSONAL: '/api/personal',
+      PERSONAL_BY_CI: (ci: string) => `/api/personal/${ci}`,
+      SEARCH: '/api/personal/search',
     },
   },
 
@@ -41,10 +41,10 @@ export const API_CONFIG = {
   TURNOS: {
     BASE_URL: process.env.NEXT_PUBLIC_API_TURNOS_URL,
     ENDPOINTS: {
-      INSERT: '/turnos/insert',
-      READ_ALL: '/turnos/read_all',
-      READ_BY_NAME: (nombre: string) => `/turnos/read_by_name/${nombre}`,
-      UPDATE: (id: number) => `/turnos/update/${id}`,
+      INSERT: '/api/turnos/insert',
+      READ_ALL: '/api/turnos/read_all',
+      READ_BY_NAME: (nombre: string) => `/api/turnos/read_by_name/${nombre}`,
+      UPDATE: (id: number) => `/api/turnos/update/${id}`,
     },
   },
 
@@ -63,37 +63,37 @@ export const API_CONFIG = {
 
   /**
    * API de Firmas
-   * Puerto: 5001
-   * Endpoints: /firmas, /firmas/hoy, /firmas/procesar, etc.
+   * Puerto: 5006
+   * Endpoints: /api/firmas, /api/firmas/hoy, /api/firmas/procesar, etc.
    */
   FIRMAS: {
     BASE_URL: process.env.NEXT_PUBLIC_API_FIRMAS_URL,
     ENDPOINTS: {
-      HEALTH: '/health',
-      FIRMAS: '/firmas',
-      HOY: '/firmas/hoy',
-      BY_ID: (id: number) => `/firmas/${id}`,
-      BY_EMPLEADO: (ci: string) => `/firmas/empleado/${ci}`,
-      BY_EMPLEADO_FECHA: (ci: string, fecha: string) => `/firmas/empleado/${ci}/fecha/${fecha}`,
-      BY_FECHA: (fecha: string) => `/firmas/fecha/${fecha}`,
-      INCOMPLETAS: '/firmas/incompletas',
-      INICIAR_JORNADA: '/firmas/iniciar-jornada',
-      PROCESAR: '/firmas/procesar',
-      UPDATE: (id: number) => `/firmas/${id}`,
-      AUTOCOMPLETAR: '/firmas/autocompletar',
-      DELETE: (id: number) => `/firmas/${id}`,
+      HEALTH: '/api/health',
+      FIRMAS: '/api/firmas',
+      HOY: '/api/firmas/hoy',
+      BY_ID: (id: number) => `/api/firmas/${id}`,
+      BY_EMPLEADO: (ci: string) => `/api/firmas/empleado/${ci}`,
+      BY_EMPLEADO_FECHA: (ci: string, fecha: string) => `/api/firmas/empleado/${ci}/fecha/${fecha}`,
+      BY_FECHA: (fecha: string) => `/api/firmas/fecha/${fecha}`,
+      INCOMPLETAS: '/api/firmas/incompletas',
+      INICIAR_JORNADA: '/api/firmas/iniciar-jornada',
+      PROCESAR: '/api/firmas/procesar',
+      UPDATE: (id: number) => `/api/firmas/${id}`,
+      AUTOCOMPLETAR: '/api/firmas/autocompletar',
+      DELETE: (id: number) => `/api/firmas/${id}`,
     },
   },
 
   /**
    * API de Autenticación (Login)
    * Puerto: 5005
-   * Endpoints: /auth/login
+   * Endpoints: /api/auth/login
    */
   AUTH: {
     BASE_URL: process.env.NEXT_PUBLIC_API_AUTH_URL,
     ENDPOINTS: {
-      LOGIN: '/auth/login',
+      LOGIN: '/api/auth/login',
     },
   },
 };
